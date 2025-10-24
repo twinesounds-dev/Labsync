@@ -45,34 +45,50 @@ export async function seedDatabase() {
 
       // Create tests for this category
       for (const testData of categoryData.tests) {
+        const testDoc: Partial<Test> = {
+          code: testData.code,
+          name: testData.name,
+          categoryId: categoryId,
+          price: testData.price,
+          turnaroundTime: testData.turnaroundTime,
+          sampleType: testData.sampleType,
+          containerType: testData.containerType,
+          isActive: true,
+        };
+        
+        // Only add storageRequirements if it exists
+        if ('storageRequirements' in testData && testData.storageRequirements) {
+          testDoc.storageRequirements = testData.storageRequirements;
+        }
+        
         const testId = await firestoreService.create<Test>(
           COLLECTIONS.TESTS,
-          {
-            code: testData.code,
-            name: testData.name,
-            categoryId: categoryId,
-            price: testData.price,
-            turnaroundTime: testData.turnaroundTime,
-            sampleType: testData.sampleType,
-            containerType: testData.containerType,
-            storageRequirements: 'storageRequirements' in testData ? testData.storageRequirements : undefined,
-            isActive: true,
-          } as Partial<Test>
+          testDoc
         );
 
         // Create normal ranges for test parameters
         if (testData.parameters) {
           for (const param of testData.parameters) {
+            const rangeDoc: Partial<TestNormalRange> = {
+              testId: testId,
+              parameter: param.parameter,
+              unit: param.unit,
+            };
+            
+            // Only add fields if they exist and are not undefined
+            if ('normalRangeMale' in param && param.normalRangeMale) {
+              rangeDoc.normalRangeMale = param.normalRangeMale;
+            }
+            if ('normalRangeFemale' in param && param.normalRangeFemale) {
+              rangeDoc.normalRangeFemale = param.normalRangeFemale;
+            }
+            if ('normalRangeGeneral' in param && param.normalRangeGeneral) {
+              rangeDoc.normalRangeGeneral = param.normalRangeGeneral;
+            }
+            
             await firestoreService.create<TestNormalRange>(
               COLLECTIONS.TEST_NORMAL_RANGES,
-              {
-                testId: testId,
-                parameter: param.parameter,
-                unit: param.unit,
-                normalRangeMale: 'normalRangeMale' in param ? param.normalRangeMale : undefined,
-                normalRangeFemale: 'normalRangeFemale' in param ? param.normalRangeFemale : undefined,
-                normalRangeGeneral: 'normalRangeGeneral' in param ? param.normalRangeGeneral : undefined,
-              } as Partial<TestNormalRange>
+              rangeDoc
             );
           }
         }
@@ -204,6 +220,13 @@ export async function generateSamplePatients(facilityId: string, count: number =
       urgency: ['Routine', 'Urgent', 'STAT'][Math.floor(Math.random() * 3)] as 'Routine' | 'Urgent' | 'STAT',
       paymentType: ['Cash', 'Insurance', 'Corporate'][Math.floor(Math.random() * 3)] as 'Cash' | 'Insurance' | 'Corporate',
       isExternalReferral: Math.random() > 0.7,
+      createdBy: 'demo-reception-ntungamo',
+    });
+  }
+  
+  console.log(`✓ Generated ${count} sample patients`);
+}
+Referral: Math.random() > 0.7,
       createdBy: 'demo-reception-ntungamo',
     });
   }
