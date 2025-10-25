@@ -14,32 +14,32 @@ import {
 
 export default function OwnerDashboard() {
   const [stats] = useState({
-    totalRevenue: 145000000,
-    monthlyRevenue: 12500000,
-    totalPatients: 1245,
-    monthlyPatients: 156,
-    pendingApprovals: 12,
-    activeStaff: 18,
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    totalPatients: 0,
+    monthlyPatients: 0,
+    pendingApprovals: 0,
+    activeStaff: 0,
   });
 
   const facilities = [
     {
       name: 'FIRSTLINE - NTUNGAMO',
-      patients: 452,
-      revenue: 48000000,
-      pending: 5,
+      patients: 0,
+      revenue: 0,
+      pending: 0,
     },
     {
       name: 'FIRSTLINE - MBARARA',
-      patients: 523,
-      revenue: 62000000,
-      pending: 4,
+      patients: 0,
+      revenue: 0,
+      pending: 0,
     },
     {
       name: 'PRIMECURE MEDICAL',
-      patients: 270,
-      revenue: 35000000,
-      pending: 3,
+      patients: 0,
+      revenue: 0,
+      pending: 0,
     },
   ];
 
@@ -59,7 +59,7 @@ export default function OwnerDashboard() {
                   Total Revenue
                 </p>
                 <p className="text-3xl font-bold text-blue-900 mt-1">
-                  {(stats.totalRevenue / 1000000).toFixed(1)}M
+                  {stats.totalRevenue === 0 ? '0' : (stats.totalRevenue / 1000000).toFixed(1) + 'M'}
                 </p>
                 <p className="text-xs text-blue-600 mt-1">UGX</p>
               </div>
@@ -131,15 +131,15 @@ export default function OwnerDashboard() {
                   <div>
                     <p className="text-sm text-gray-600">Revenue</p>
                     <p className="text-xl font-bold text-green-600">
-                      {(facility.revenue / 1000000).toFixed(1)}M
+                      {facility.revenue === 0 ? '0' : (facility.revenue / 1000000).toFixed(1) + 'M'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Growth</p>
                     <div className="flex items-center">
-                      <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                      <p className="text-xl font-bold text-green-600">
-                        +12%
+                      <TrendingUp className="w-4 h-4 text-gray-400 mr-1" />
+                      <p className="text-xl font-bold text-gray-400">
+                        0%
                       </p>
                     </div>
                   </div>
