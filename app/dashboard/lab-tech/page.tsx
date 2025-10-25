@@ -1,18 +1,98 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { FlaskConical, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/firestore';
 
 export default function LabTechDashboard() {
-  const [stats] = useState({
-    pendingTests: 15,
-    completedToday: 8,
-    urgentTests: 3,
-    qcAlerts: 1,
+  const { userProfile } = useAuth();
+  const [stats, setStats] = useState({
+    pendingTests: 0,
+    completedToday: 0,
+    urgentTests: 0,
+    qcAlerts: 0,
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userProfile?.facilityId) {
+      setLoading(false);
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTimestamp = Timestamp.fromDate(today);
+
+    // Subscribe to test requests for pending tests
+    const requestsQuery = query(
+      collection(db, COLLECTIONS.TEST_REQUESTS),
+      where('facilityId', '==', userProfile.facilityId),
+      where('paymentStatus', '==', 'Paid')
+    );
+
+    const unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
+      let pendingTests = 0;
+      let urgentTests = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+
+        // Count tests that have been paid for and sample received
+        if (data.sampleReceivedDate) {
+          data.tests?.forEach((test: { status: string }) => {
+            if (test.status === 'Pending' || test.status === 'InProgress') {
+              pendingTests++;
+            }
+          });
+        }
+
+        // Count urgent tests
+        if (data.patient?.urgency === 'Urgent' || data.patient?.urgency === 'STAT') {
+          urgentTests++;
+        }
+      });
+
+      setStats((prev) => ({ ...prev, pendingTests, urgentTests }));
+    });
+
+    // Subscribe to test results for completed today
+    const resultsQuery = query(
+      collection(db, COLLECTIONS.TEST_RESULTS),
+      where('facilityId', '==', userProfile.facilityId)
+    );
+
+    const unsubscribeResults = onSnapshot(resultsQuery, (snapshot) => {
+      const completedToday = snapshot.docs.filter((doc) => {
+        const data = doc.data();
+        return data.datePerformed && data.datePerformed >= todayTimestamp;
+      }).length;
+
+      setStats((prev) => ({ ...prev, completedToday }));
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeRequests();
+      unsubscribeResults();
+    };
+  }, [userProfile?.facilityId]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading dashboard...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

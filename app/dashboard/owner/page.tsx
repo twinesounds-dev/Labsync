@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import {
@@ -11,37 +12,123 @@ import {
   TrendingUp,
   AlertCircle,
 } from 'lucide-react';
+import { collection, query, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/firestore';
+import Link from 'next/link';
 
 export default function OwnerDashboard() {
-  const [stats] = useState({
-    totalRevenue: 145000000,
-    monthlyRevenue: 12500000,
-    totalPatients: 1245,
-    monthlyPatients: 156,
-    pendingApprovals: 12,
-    activeStaff: 18,
+  const { userProfile } = useAuth();
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    totalPatients: 0,
+    monthlyPatients: 0,
+    pendingApprovals: 0,
+    activeStaff: 0,
   });
+  const [facilities, setFacilities] = useState<
+    Array<{ id: string; name: string; patients: number; revenue: number; pending: number }>
+  >([]);
+  const [loading, setLoading] = useState(true);
 
-  const facilities = [
-    {
-      name: 'FIRSTLINE - NTUNGAMO',
-      patients: 452,
-      revenue: 48000000,
-      pending: 5,
-    },
-    {
-      name: 'FIRSTLINE - MBARARA',
-      patients: 523,
-      revenue: 62000000,
-      pending: 4,
-    },
-    {
-      name: 'PRIMECURE MEDICAL',
-      patients: 270,
-      revenue: 35000000,
-      pending: 3,
-    },
-  ];
+  useEffect(() => {
+    if (!userProfile) {
+      setLoading(false);
+      return;
+    }
+
+    // Get month start
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const monthStartTimestamp = Timestamp.fromDate(monthStart);
+
+    // Subscribe to all facilities
+    const facilitiesQuery = query(collection(db, COLLECTIONS.FACILITIES));
+    const unsubFacilities = onSnapshot(facilitiesQuery, (snapshot) => {
+      const facilitiesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        patients: 0,
+        revenue: 0,
+        pending: 0,
+      }));
+      setFacilities(facilitiesData);
+    });
+
+    // Subscribe to all patients (across all facilities)
+    const patientsQuery = query(collection(db, COLLECTIONS.PATIENTS));
+    const unsubPatients = onSnapshot(patientsQuery, (snapshot) => {
+      const totalPatients = snapshot.size;
+      const monthlyPatients = snapshot.docs.filter((doc) => {
+        const data = doc.data();
+        return data.createdAt >= monthStartTimestamp;
+      }).length;
+
+      setStats((prev) => ({ ...prev, totalPatients, monthlyPatients }));
+    });
+
+    // Subscribe to all payments for revenue
+    const paymentsQuery = query(collection(db, COLLECTIONS.PAYMENTS));
+    const unsubPayments = onSnapshot(paymentsQuery, (snapshot) => {
+      let totalRevenue = 0;
+      let monthlyRevenue = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        totalRevenue += data.total || 0;
+
+        if (data.createdAt >= monthStartTimestamp) {
+          monthlyRevenue += data.total || 0;
+        }
+      });
+
+      setStats((prev) => ({ ...prev, totalRevenue, monthlyRevenue }));
+    });
+
+    // Subscribe to test results for pending approvals
+    const resultsQuery = query(collection(db, COLLECTIONS.TEST_RESULTS));
+    const unsubResults = onSnapshot(resultsQuery, (snapshot) => {
+      const pendingApprovals = snapshot.docs.filter((doc) => {
+        const data = doc.data();
+        return data.status === 'Submitted';
+      }).length;
+
+      setStats((prev) => ({ ...prev, pendingApprovals }));
+    });
+
+    // Subscribe to users for active staff
+    const usersQuery = query(collection(db, COLLECTIONS.USERS));
+    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+      const activeStaff = snapshot.docs.filter((doc) => {
+        const data = doc.data();
+        return data.isActive === true;
+      }).length;
+
+      setStats((prev) => ({ ...prev, activeStaff }));
+    });
+
+    setLoading(false);
+
+    return () => {
+      unsubFacilities();
+      unsubPatients();
+      unsubPayments();
+      unsubResults();
+      unsubUsers();
+    };
+  }, [userProfile]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading dashboard...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -85,20 +172,22 @@ export default function OwnerDashboard() {
           </Card>
 
           <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-orange-600 font-medium">
-                  Pending Approvals
-                </p>
-                <p className="text-3xl font-bold text-orange-900 mt-1">
-                  {stats.pendingApprovals}
-                </p>
-                <p className="text-xs text-orange-600 mt-1">
-                  Across all facilities
-                </p>
+            <Link href="/dashboard/owner/approvals">
+              <div className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <p className="text-sm text-orange-600 font-medium">
+                    Pending Approvals
+                  </p>
+                  <p className="text-3xl font-bold text-orange-900 mt-1">
+                    {stats.pendingApprovals}
+                  </p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Click to review
+                  </p>
+                </div>
+                <AlertCircle className="w-12 h-12 text-orange-500 opacity-50" />
               </div>
-              <AlertCircle className="w-12 h-12 text-orange-500 opacity-50" />
-            </div>
+            </Link>
           </Card>
         </div>
 

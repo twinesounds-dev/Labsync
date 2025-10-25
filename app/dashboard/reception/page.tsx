@@ -1,42 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { Users, Receipt, TestTube, DollarSign, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { FacilityStats } from '@/types';
+import { useRealtimeStats } from '@/lib/hooks/useRealtimeStats';
 
 export default function ReceptionDashboard() {
-  const { } = useAuth();
-  const [stats, setStats] = useState<FacilityStats>({
-    totalPatients: 0,
-    todayPatients: 0,
-    totalRevenue: 0,
-    todayRevenue: 0,
-    pendingApprovals: 0,
-    testsToday: 0,
-    pendingPayments: 0,
-    patientsWaitingForSamples: 0,
-    patientsWaitingForReports: 0,
-  });
+  const { userProfile } = useAuth();
+  const { stats, loading } = useRealtimeStats(userProfile?.facilityId || '');
 
-  useEffect(() => {
-    // Fetch dashboard stats
-    // This will be implemented with actual Firestore queries
-    setStats({
-      totalPatients: 245,
-      todayPatients: 12,
-      totalRevenue: 45000000,
-      todayRevenue: 850000,
-      pendingApprovals: 5,
-      testsToday: 28,
-      pendingPayments: 3,
-      patientsWaitingForSamples: 4,
-      patientsWaitingForReports: 7,
-    });
-  }, []);
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading dashboard...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

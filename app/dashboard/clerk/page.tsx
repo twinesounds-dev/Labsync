@@ -1,18 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { TestTube, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/firestore';
 
 export default function ClerkDashboard() {
-  const [stats] = useState({
-    samplesAwaiting: 8,
-    samplesProcessedToday: 15,
-    testsPending: 12,
-    sampleRejections: 2,
+  const { userProfile } = useAuth();
+  const [stats, setStats] = useState({
+    samplesAwaiting: 0,
+    samplesProcessedToday: 0,
+    testsPending: 0,
+    sampleRejections: 0,
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userProfile?.facilityId) {
+      setLoading(false);
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTimestamp = Timestamp.fromDate(today);
+
+    // Subscribe to test requests
+    const requestsQuery = query(
+      collection(db, COLLECTIONS.TEST_REQUESTS),
+      where('facilityId', '==', userProfile.facilityId)
+    );
+
+    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+      let samplesAwaiting = 0;
+      let samplesProcessedToday = 0;
+      let testsPending = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+
+        // Samples awaiting reception (paid but not yet received)
+        if (data.paymentStatus === 'Paid' && !data.sampleReceivedDate) {
+          samplesAwaiting++;
+        }
+
+        // Samples processed today
+        if (data.sampleReceivedDate && data.sampleReceivedDate >= todayTimestamp) {
+          samplesProcessedToday++;
+        }
+
+        // Tests pending (payment confirmed but samples not yet received)
+        if (data.paymentStatus === 'Paid' && !data.sampleReceivedDate) {
+          testsPending += data.tests?.length || 0;
+        }
+      });
+
+      setStats({
+        samplesAwaiting,
+        samplesProcessedToday,
+        testsPending,
+        sampleRejections: 0, // Can be tracked separately if needed
+      });
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userProfile?.facilityId]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading dashboard...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
