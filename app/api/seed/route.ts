@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
-import { seedDatabase } from '@/utils/seed-data';
+import { seedService } from '@/lib/seed-service';
 
 export async function POST() {
   try {
-    const result = await seedDatabase();
+    await seedService.seedAll();
     return NextResponse.json({ 
-      success: true, 
+      success: true,
       message: 'Database seeded successfully',
-      data: result
+      details: {
+        facilities: 'Seeded 3 facilities',
+        testCategories: 'Seeded 8 test categories',
+        tests: 'Seeded 15 common tests',
+        users: 'Seeded 4 default users'
+      }
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

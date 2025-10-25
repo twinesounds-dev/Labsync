@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import {
   Building2,
   DollarSign,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function OwnerDashboard() {
-  const [stats] = useState({
+  const [stats, setStats] = useState({
     totalRevenue: 0,
     monthlyRevenue: 0,
     totalPatients: 0,
@@ -22,26 +23,143 @@ export default function OwnerDashboard() {
     activeStaff: 0,
   });
 
-  const facilities = [
+  const [facilities, setFacilities] = useState([
     {
+      id: '',
       name: 'FIRSTLINE - NTUNGAMO',
+      code: 'FLNT',
       patients: 0,
       revenue: 0,
       pending: 0,
     },
     {
+      id: '',
       name: 'FIRSTLINE - MBARARA',
+      code: 'FLMB',
       patients: 0,
       revenue: 0,
       pending: 0,
     },
     {
+      id: '',
       name: 'PRIMECURE MEDICAL',
+      code: 'PCMC',
       patients: 0,
       revenue: 0,
       pending: 0,
     },
-  ];
+  ]);
+
+  const convertToDate = (dateValue?: { toDate?: () => Date } | Date | string): Date => {
+    if (!dateValue) return new Date();
+    if (typeof dateValue === 'object' && 'toDate' in dateValue && dateValue.toDate) {
+      return dateValue.toDate();
+    }
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    return new Date(dateValue as string);
+  };
+
+  const loadDashboardStats = useCallback(async () => {
+    try {
+      // Get all facilities
+      const facilitiesData = await firestoreService.getAll(COLLECTIONS.FACILITIES) as Array<{
+        id: string;
+        name: string;
+        code: string;
+      }>;
+      
+      // Get all patients
+      const patients = await firestoreService.getAll(COLLECTIONS.PATIENTS) as Array<{
+        registrationDate?: { toDate?: () => Date } | Date | string;
+        facilityId?: string;
+        id?: string;
+      }>;
+      
+      // Get all payments
+      const payments = await firestoreService.getAll(COLLECTIONS.PAYMENTS) as Array<{
+        paymentDate?: { toDate?: () => Date } | Date | string;
+        amountPaid?: number;
+        patientId?: string;
+      }>;
+      
+      // Get all users
+      const users = await firestoreService.getAll(COLLECTIONS.USERS) as Array<{
+        isActive?: boolean;
+      }>;
+      
+      // Get all test results
+      const testResults = await firestoreService.getAll(COLLECTIONS.TEST_RESULTS) as Array<{
+        status?: string;
+        facilityId?: string;
+      }>;
+
+      // Calculate this month's date range
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Calculate total revenue
+      const totalRevenue = payments.reduce((sum: number, p) => sum + (p.amountPaid || 0), 0);
+
+      // Calculate monthly revenue
+      const monthlyRevenue = payments
+        .filter(p => {
+          const paymentDate = convertToDate(p.paymentDate);
+          return paymentDate >= startOfMonth;
+        })
+        .reduce((sum: number, p) => sum + (p.amountPaid || 0), 0);
+
+      // Calculate monthly patients
+      const monthlyPatients = patients.filter(p => {
+        const registrationDate = convertToDate(p.registrationDate);
+        return registrationDate >= startOfMonth;
+      }).length;
+
+      // Calculate pending approvals
+      const pendingApprovals = testResults.filter(tr => tr.status === 'Submitted').length;
+
+      // Calculate active staff
+      const activeStaff = users.filter(u => u.isActive).length;
+
+      setStats({
+        totalRevenue,
+        monthlyRevenue,
+        totalPatients: patients.length,
+        monthlyPatients,
+        pendingApprovals,
+        activeStaff,
+      });
+
+      // Calculate facility-specific stats
+      const facilityStats = facilitiesData.map(facility => {
+        const facilityPatients = patients.filter(p => p.facilityId === facility.id);
+        const facilityPayments = payments.filter(p => {
+          const patient = patients.find(pt => pt.id === p.patientId);
+          return patient?.facilityId === facility.id;
+        });
+        const facilityTestResults = testResults.filter(tr => tr.facilityId === facility.id);
+
+        return {
+          id: facility.id,
+          name: facility.name,
+          code: facility.code,
+          patients: facilityPatients.length,
+          revenue: facilityPayments.reduce((sum: number, p) => sum + (p.amountPaid || 0), 0),
+          pending: facilityTestResults.filter(tr => tr.status === 'Submitted').length,
+        };
+      });
+
+      setFacilities(facilityStats);
+    } catch (error) {
+      console.error('Error loading owner dashboard stats:', error);
+      // Keep default values on error
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboardStats();
+  }, [loadDashboardStats]);
 
   return (
     <DashboardLayout>
@@ -183,7 +301,7 @@ export default function OwnerDashboard() {
             <div className="text-center py-4">
               <Building2 className="w-10 h-10 mx-auto mb-2 text-purple-600" />
               <h3 className="font-semibold">Facilities</h3>
-              <p className="text-sm text-gray-600 mt-1">3 locations</p>
+              <p className="text-sm text-gray-600 mt-1">{facilities.length} locations</p>
             </div>
           </Card>
         </div>

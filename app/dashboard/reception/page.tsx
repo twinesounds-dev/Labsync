@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { Users, Receipt, TestTube, DollarSign, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { FacilityStats } from '@/types';
@@ -22,21 +23,112 @@ export default function ReceptionDashboard() {
     patientsWaitingForReports: 0,
   });
 
-  useEffect(() => {
-    // Fetch dashboard stats
-    // This will be implemented with actual Firestore queries
-    setStats({
-      totalPatients: 245,
-      todayPatients: 12,
-      totalRevenue: 45000000,
-      todayRevenue: 850000,
-      pendingApprovals: 5,
-      testsToday: 28,
-      pendingPayments: 3,
-      patientsWaitingForSamples: 4,
-      patientsWaitingForReports: 7,
-    });
+  const convertToDate = (dateValue?: { toDate?: () => Date } | Date | string): Date => {
+    if (!dateValue) return new Date();
+    if (typeof dateValue === 'object' && 'toDate' in dateValue && dateValue.toDate) {
+      return dateValue.toDate();
+    }
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    return new Date(dateValue as string);
+  };
+
+  const loadDashboardStats = useCallback(async () => {
+    try {
+      // Get all patients
+      const patients = await firestoreService.getAll(COLLECTIONS.PATIENTS) as Array<{
+        registrationDate?: { toDate?: () => Date } | Date | string;
+        facilityId?: string;
+        id?: string;
+      }>;
+      
+      // Get today's patients
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayPatients = patients.filter(p => {
+        const registrationDate = convertToDate(p.registrationDate);
+        return registrationDate >= today;
+      });
+
+      // Get all payments
+      const payments = await firestoreService.getAll(COLLECTIONS.PAYMENTS) as Array<{
+        paymentDate?: { toDate?: () => Date } | Date | string;
+        amountPaid?: number;
+        status?: string;
+        patientId?: string;
+      }>;
+      
+      // Calculate today's revenue
+      const todayRevenue = payments
+        .filter(p => {
+          const paymentDate = convertToDate(p.paymentDate);
+          return paymentDate >= today;
+        })
+        .reduce((sum: number, p) => sum + (p.amountPaid || 0), 0);
+
+      // Calculate total revenue
+      const totalRevenue = payments.reduce((sum: number, p) => sum + (p.amountPaid || 0), 0);
+
+      // Get test requests
+      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS) as Array<{
+        requestDate?: { toDate?: () => Date } | Date | string;
+        overallStatus?: string;
+        tests?: unknown[];
+      }>;
+      
+      // Calculate today's tests
+      const todayTests = testRequests.filter(tr => {
+        const requestDate = convertToDate(tr.requestDate);
+        return requestDate >= today;
+      });
+
+      // Calculate pending payments
+      const pendingPayments = payments.filter(p => p.status === 'Pending' || p.status === 'Partial').length;
+
+      // Calculate patients waiting for samples
+      const patientsWaitingForSamples = testRequests.filter(tr => tr.overallStatus === 'Pending').length;
+
+      // Calculate patients waiting for reports
+      const patientsWaitingForReports = testRequests.filter(tr => tr.overallStatus === 'Approved').length;
+
+      // Get pending approvals
+      const testResults = await firestoreService.getAll(COLLECTIONS.TEST_RESULTS) as Array<{
+        status?: string;
+      }>;
+      const pendingApprovals = testResults.filter(tr => tr.status === 'Submitted').length;
+
+      setStats({
+        totalPatients: patients.length,
+        todayPatients: todayPatients.length,
+        totalRevenue,
+        todayRevenue,
+        pendingApprovals,
+        testsToday: todayTests.reduce((sum: number, tr) => sum + (tr.tests?.length || 0), 0),
+        pendingPayments,
+        patientsWaitingForSamples,
+        patientsWaitingForReports,
+      });
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+      // Fallback to zero values
+      setStats({
+        totalPatients: 0,
+        todayPatients: 0,
+        totalRevenue: 0,
+        todayRevenue: 0,
+        pendingApprovals: 0,
+        testsToday: 0,
+        pendingPayments: 0,
+        patientsWaitingForSamples: 0,
+        patientsWaitingForReports: 0,
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    loadDashboardStats();
+  }, [loadDashboardStats]);
 
   return (
     <DashboardLayout>

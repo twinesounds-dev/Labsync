@@ -1,68 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
-import { Building2, MapPin, Phone, Mail, Users, TrendingUp } from 'lucide-react';
+import AddFacilityModal from '@/components/modals/AddFacilityModal';
+import EditFacilityModal from '@/components/modals/EditFacilityModal';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
+import { Facility } from '@/types';
+import { Building2, MapPin, Phone, Mail, Users, TrendingUp, Edit } from 'lucide-react';
 
 export default function FacilitiesPage() {
-  const [facilities] = useState([
-    {
-      id: '1',
-      name: 'FIRSTLINE MEDICAL LABORATORY DIAGNOSTICS - NTUNGAMO',
-      code: 'FLNT',
-      address: 'Ntungamo District, Uganda',
-      phone: '+256 700 000 001',
-      email: 'ntungamo@firstlinelab.ug',
-      licenseNumber: 'LAB-UG-2024-001',
-      isActive: true,
-      stats: {
-        totalPatients: 0,
-        monthlyRevenue: 0,
-        activeStaff: 0,
-        pendingApprovals: 0,
-      },
-    },
-    {
-      id: '2',
-      name: 'FIRSTLINE MEDICAL LABORATORY DIAGNOSTICS - MBARARA',
-      code: 'FLMB',
-      address: 'Mbarara District, Uganda',
-      phone: '+256 700 000 002',
-      email: 'mbarara@firstlinelab.ug',
-      licenseNumber: 'LAB-UG-2024-002',
-      isActive: true,
-      stats: {
-        totalPatients: 0,
-        monthlyRevenue: 0,
-        activeStaff: 0,
-        pendingApprovals: 0,
-      },
-    },
-    {
-      id: '3',
-      name: 'PRIMECURE MEDICAL CENTRE',
-      code: 'PCMC',
-      address: 'Kampala, Uganda',
-      phone: '+256 700 000 003',
-      email: 'info@primecuremedical.ug',
-      licenseNumber: 'LAB-UG-2024-003',
-      isActive: true,
-      stats: {
-        totalPatients: 0,
-        monthlyRevenue: 0,
-        activeStaff: 0,
-        pendingApprovals: 0,
-      },
-    },
-  ]);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
+
+  const loadFacilities = async () => {
+    try {
+      const facilitiesData = await firestoreService.getAll<Facility>(COLLECTIONS.FACILITIES);
+      setFacilities(facilitiesData);
+    } catch (error) {
+      console.error('Error loading facilities:', error);
+    }
+  };
+
+  const handleEditFacility = (facility: Facility) => {
+    setSelectedFacility(facility);
+    setShowEditModal(true);
+  };
+
+  useEffect(() => {
+    loadFacilities();
+  }, []);
 
   return (
     <DashboardLayout>
       <div>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Facilities Management</h1>
-          <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+          >
             Add New Facility
           </button>
         </div>
@@ -87,10 +66,11 @@ export default function FacilitiesPage() {
                   }`}>
                     {facility.isActive ? 'Active' : 'Inactive'}
                   </span>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
+                  <button 
+                    onClick={() => handleEditFacility(facility)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <Edit className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -110,29 +90,27 @@ export default function FacilitiesPage() {
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="w-4 h-4 mr-2" />
-                  <span className="text-sm">{facility.stats.activeStaff} Active Staff</span>
+                  <span className="text-sm">0 Active Staff</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">{facility.stats.totalPatients}</p>
+                  <p className="text-2xl font-bold text-blue-600">0</p>
                   <p className="text-xs text-gray-600">Total Patients</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
-                    {(facility.stats.monthlyRevenue / 1000000).toFixed(1)}M
-                  </p>
+                  <p className="text-2xl font-bold text-green-600">0.0M</p>
                   <p className="text-xs text-gray-600">Monthly Revenue</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-orange-600">{facility.stats.pendingApprovals}</p>
+                  <p className="text-2xl font-bold text-orange-600">0</p>
                   <p className="text-xs text-gray-600">Pending Approvals</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                    <p className="text-2xl font-bold text-green-600">+12%</p>
+                    <p className="text-2xl font-bold text-green-600">+0%</p>
                   </div>
                   <p className="text-xs text-gray-600">Growth</p>
                 </div>
@@ -140,6 +118,19 @@ export default function FacilitiesPage() {
             </Card>
           ))}
         </div>
+
+        <AddFacilityModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onFacilityAdded={loadFacilities}
+        />
+
+        <EditFacilityModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onFacilityUpdated={loadFacilities}
+          facility={selectedFacility}
+        />
       </div>
     </DashboardLayout>
   );

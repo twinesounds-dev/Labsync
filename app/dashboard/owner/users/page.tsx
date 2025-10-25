@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import AddUserModal from '@/components/modals/AddUserModal';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { 
   Users, 
   UserPlus, 
@@ -29,13 +31,24 @@ interface User {
 }
 
 export default function UsersPage() {
-  const [users] = useState<User[]>([
-    // Users will be loaded from the database when facilities add them
-  ]);
-
+  const [users, setUsers] = useState<User[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedFacility, setSelectedFacility] = useState('');
+
+  const loadUsers = async () => {
+    try {
+      const usersData = await firestoreService.getAll<User>(COLLECTIONS.USERS);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -114,7 +127,10 @@ export default function UsersPage() {
       <div>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center"
+          >
             <UserPlus className="w-4 h-4 mr-2" />
             Add New User
           </button>
@@ -308,6 +324,12 @@ export default function UsersPage() {
             </table>
           </div>
         </Card>
+
+        <AddUserModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onUserAdded={loadUsers}
+        />
       </div>
     </DashboardLayout>
   );
