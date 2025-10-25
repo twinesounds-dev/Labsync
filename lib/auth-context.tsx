@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
   User as FirebaseUser,
+  UserCredential,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -16,7 +17,7 @@ interface AuthContextType {
   user: FirebaseUser | null;
   userProfile: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<UserCredential>;
   signUp: (email: string, password: string, userData: Partial<User>) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -25,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userProfile: null,
   loading: true,
-  signIn: async () => {},
+  signIn: async () => ({} as UserCredential),
   signUp: async () => {},
   signOut: async () => {},
 });
