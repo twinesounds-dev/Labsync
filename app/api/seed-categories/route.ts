@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, Timestamp } from 'firebase/firestore';
 
+export const runtime = 'nodejs';
+
 const testCategories = [
   {
     name: 'Hematology',

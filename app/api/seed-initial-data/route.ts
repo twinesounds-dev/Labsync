@@ -4,6 +4,8 @@ import { collection, addDoc, getDocs, doc, setDoc, Timestamp } from 'firebase/fi
 import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
+export const runtime = 'nodejs';
+
 interface SeedResults {
   facilities: Array<{ id: string; [key: string]: unknown }>;
   categories: Array<{ id: string; [key: string]: unknown }>;

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { seedDatabase } from '@/utils/seed-data';
 
+export const runtime = 'nodejs';
+
 export async function POST() {
   try {
     const result = await seedDatabase();
