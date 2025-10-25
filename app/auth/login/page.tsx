@@ -79,9 +79,9 @@ export default function LoginPage() {
           <p>Demo Credentials:</p>
           <div className="mt-2 space-y-1 text-xs">
             <p><strong>Owner:</strong> owner@labsync.ug / password123</p>
-            <p><strong>Receptionist:</strong> reception@labsync.ug / password123</p>
-            <p><strong>Clerk:</strong> clerk@labsync.ug / password123</p>
-            <p><strong>Lab Tech:</strong> labtech@labsync.ug / password123</p>
+            <p><strong>Receptionist:</strong> reception.ntungamo@labsync.ug / password123</p>
+            <p><strong>Clerk:</strong> clerk.ntungamo@labsync.ug / password123</p>
+            <p><strong>Lab Tech:</strong> labtech.ntungamo@labsync.ug / password123</p>
           </div>
         </div>
       </div>
