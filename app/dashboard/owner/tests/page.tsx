@@ -323,23 +323,21 @@ export default function TestManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category *
-                  </label>
                   <Select
+                    label="Category"
                     required
                     value={formData.categoryId}
                     onChange={(e) =>
                       setFormData({ ...formData, categoryId: e.target.value })
                     }
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </Select>
+                    options={[
+                      { value: '', label: 'Select Category' },
+                      ...categories.map((category) => ({
+                        value: category.id,
+                        label: category.name,
+                      })),
+                    ]}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -375,24 +373,23 @@ export default function TestManagementPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Sample Type *
-                    </label>
                     <Select
+                      label="Sample Type"
                       required
                       value={formData.sampleType}
                       onChange={(e) =>
                         setFormData({ ...formData, sampleType: e.target.value })
                       }
-                    >
-                      <option value="">Select Sample Type</option>
-                      <option value="Blood">Blood</option>
-                      <option value="Urine">Urine</option>
-                      <option value="Stool">Stool</option>
-                      <option value="Sputum">Sputum</option>
-                      <option value="Swab">Swab</option>
-                      <option value="Other">Other</option>
-                    </Select>
+                      options={[
+                        { value: '', label: 'Select Sample Type' },
+                        { value: 'Blood', label: 'Blood' },
+                        { value: 'Urine', label: 'Urine' },
+                        { value: 'Stool', label: 'Stool' },
+                        { value: 'Sputum', label: 'Sputum' },
+                        { value: 'Swab', label: 'Swab' },
+                        { value: 'Other', label: 'Other' },
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

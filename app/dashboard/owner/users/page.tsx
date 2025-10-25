@@ -368,41 +368,38 @@ export default function UserManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
-                  </label>
                   <Select
+                    label="Role"
                     required
                     value={formData.role}
                     onChange={(e) =>
                       setFormData({ ...formData, role: e.target.value as UserRole })
                     }
-                  >
-                    <option value="receptionist">Receptionist</option>
-                    <option value="clerk">Clerk</option>
-                    <option value="lab_tech">Lab Technician</option>
-                    <option value="owner">Owner/Admin</option>
-                  </Select>
+                    options={[
+                      { value: 'receptionist', label: 'Receptionist' },
+                      { value: 'clerk', label: 'Clerk' },
+                      { value: 'lab_tech', label: 'Lab Technician' },
+                      { value: 'owner', label: 'Owner/Admin' },
+                    ]}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Facility *
-                  </label>
                   <Select
+                    label="Facility"
                     required
                     value={formData.facilityId}
                     onChange={(e) =>
                       setFormData({ ...formData, facilityId: e.target.value })
                     }
-                  >
-                    <option value="">Select Facility</option>
-                    {facilities.map((facility) => (
-                      <option key={facility.id} value={facility.id}>
-                        {facility.name}
-                      </option>
-                    ))}
-                  </Select>
+                    options={[
+                      { value: '', label: 'Select Facility' },
+                      ...facilities.map((facility) => ({
+                        value: facility.id,
+                        label: facility.name,
+                      })),
+                    ]}
+                  />
                 </div>
 
                 <div className="flex gap-3 pt-4">
