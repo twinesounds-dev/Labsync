@@ -59,7 +59,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    
+    // Fetch and set user profile immediately
+    const profile = await firestoreService.getById<User>(
+      COLLECTIONS.USERS,
+      userCredential.user.uid
+    );
+    setUserProfile(profile);
+    
+    return userCredential;
   };
 
   const signUp = async (

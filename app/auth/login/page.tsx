@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { getRoleDashboard } from '@/lib/role-guard';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
+import { User } from '@/types';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,12 +23,24 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      router.push('/');
+      const userCredential = await signIn(email, password);
+      
+      // Fetch user profile to get role
+      const userProfile = await firestoreService.getById<User>(
+        COLLECTIONS.USERS,
+        userCredential.user.uid
+      );
+      
+      if (userProfile) {
+        // Route to role-specific dashboard
+        const dashboardRoute = getRoleDashboard(userProfile.role);
+        router.push(dashboardRoute);
+      } else {
+        setError('User profile not found. Please contact administrator.');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.';
       setError(errorMessage);
-    } finally {
       setLoading(false);
     }
   };
