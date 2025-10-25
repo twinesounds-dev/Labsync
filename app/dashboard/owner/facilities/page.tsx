@@ -1,0 +1,146 @@
+'use client';
+
+import { useState } from 'react';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import Card from '@/components/ui/Card';
+import { Building2, MapPin, Phone, Mail, Users, TrendingUp } from 'lucide-react';
+
+export default function FacilitiesPage() {
+  const [facilities] = useState([
+    {
+      id: '1',
+      name: 'FIRSTLINE MEDICAL LABORATORY DIAGNOSTICS - NTUNGAMO',
+      code: 'FLNT',
+      address: 'Ntungamo District, Uganda',
+      phone: '+256 700 000 001',
+      email: 'ntungamo@firstlinelab.ug',
+      licenseNumber: 'LAB-UG-2024-001',
+      isActive: true,
+      stats: {
+        totalPatients: 452,
+        monthlyRevenue: 48000000,
+        activeStaff: 8,
+        pendingApprovals: 5,
+      },
+    },
+    {
+      id: '2',
+      name: 'FIRSTLINE MEDICAL LABORATORY DIAGNOSTICS - MBARARA',
+      code: 'FLMB',
+      address: 'Mbarara District, Uganda',
+      phone: '+256 700 000 002',
+      email: 'mbarara@firstlinelab.ug',
+      licenseNumber: 'LAB-UG-2024-002',
+      isActive: true,
+      stats: {
+        totalPatients: 523,
+        monthlyRevenue: 62000000,
+        activeStaff: 12,
+        pendingApprovals: 4,
+      },
+    },
+    {
+      id: '3',
+      name: 'PRIMECURE MEDICAL CENTRE',
+      code: 'PCMC',
+      address: 'Kampala, Uganda',
+      phone: '+256 700 000 003',
+      email: 'info@primecuremedical.ug',
+      licenseNumber: 'LAB-UG-2024-003',
+      isActive: true,
+      stats: {
+        totalPatients: 270,
+        monthlyRevenue: 35000000,
+        activeStaff: 6,
+        pendingApprovals: 3,
+      },
+    },
+  ]);
+
+  return (
+    <DashboardLayout>
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Facilities Management</h1>
+          <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+            Add New Facility
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          {facilities.map((facility) => (
+            <Card key={facility.id} className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center">
+                  <Building2 className="w-8 h-8 text-primary mr-3" />
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">{facility.name}</h2>
+                    <p className="text-sm text-gray-600">Code: {facility.code}</p>
+                    <p className="text-sm text-gray-600">License: {facility.licenseNumber}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    facility.isActive 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {facility.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="flex items-center text-gray-600">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  <span className="text-sm">{facility.address}</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <Phone className="w-4 h-4 mr-2" />
+                  <span className="text-sm">{facility.phone}</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <Mail className="w-4 h-4 mr-2" />
+                  <span className="text-sm">{facility.email}</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <Users className="w-4 h-4 mr-2" />
+                  <span className="text-sm">{facility.stats.activeStaff} Active Staff</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">{facility.stats.totalPatients}</p>
+                  <p className="text-xs text-gray-600">Total Patients</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600">
+                    {(facility.stats.monthlyRevenue / 1000000).toFixed(1)}M
+                  </p>
+                  <p className="text-xs text-gray-600">Monthly Revenue</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-600">{facility.stats.pendingApprovals}</p>
+                  <p className="text-xs text-gray-600">Pending Approvals</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                    <p className="text-2xl font-bold text-green-600">+12%</p>
+                  </div>
+                  <p className="text-xs text-gray-600">Growth</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
