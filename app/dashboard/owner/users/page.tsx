@@ -6,7 +6,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import { Users, Plus, Edit2, Trash2, Search, UserPlus } from 'lucide-react';
+import { Trash2, Search, UserPlus } from 'lucide-react';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { User, UserRole, Facility } from '@/types';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -92,9 +92,10 @@ export default function UserManagementPage() {
       });
       setIsModalOpen(false);
       loadData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating user:', error);
-      alert(`Failed to create user: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to create user: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }

@@ -4,9 +4,16 @@ import { collection, addDoc, getDocs, doc, setDoc, Timestamp } from 'firebase/fi
 import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
+interface SeedResults {
+  facilities: Array<{ id: string; [key: string]: unknown }>;
+  categories: Array<{ id: string; [key: string]: unknown }>;
+  users: Array<{ id: string; email: string; role: string }>;
+  message: string;
+}
+
 export async function POST() {
   try {
-    const results: any = {
+    const results: SeedResults = {
       facilities: [],
       categories: [],
       users: [],
@@ -158,17 +165,19 @@ export async function POST() {
               role: userData.role,
             });
           }
-        } catch (error: any) {
-          console.log(`User ${userData.email} may already exist:`, error.message);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.log(`User ${userData.email} may already exist:`, errorMessage);
         }
       }
     }
 
     return NextResponse.json(results);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error seeding initial data:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to seed initial data', details: error.message },
+      { error: 'Failed to seed initial data', details: errorMessage },
       { status: 500 }
     );
   }

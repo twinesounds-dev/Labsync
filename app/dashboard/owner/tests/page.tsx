@@ -6,7 +6,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import { FileText, Plus, Upload, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Upload, Trash2, Search } from 'lucide-react';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { Test, TestCategory } from '@/types';
 
@@ -97,7 +97,6 @@ export default function TestManagementPage() {
     try {
       // Parse CSV or JSON data
       const lines = importData.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
       
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
