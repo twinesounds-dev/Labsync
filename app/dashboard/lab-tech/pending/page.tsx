@@ -33,20 +33,24 @@ export default function PendingResultsPage() {
     );
 
     const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
-      const requestsData = snapshot.docs
-        .map((doc) => ({
+      const allRequests = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
           id: doc.id,
-          ...doc.data(),
-          requestDate: doc.data().requestDate?.toDate() || new Date(),
-          sampleReceivedDate: doc.data().sampleReceivedDate?.toDate(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        }))
-        .filter(
-          (req) =>
-            req.sampleReceivedDate &&
-            req.tests.some((t) => t.status === 'Pending' || t.status === 'InProgress')
-        ) as TestRequest[];
+          ...data,
+          requestDate: data.requestDate?.toDate() || new Date(),
+          sampleReceivedDate: data.sampleReceivedDate?.toDate(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as TestRequest;
+      });
+
+      const requestsData = allRequests.filter(
+        (req) =>
+          req.sampleReceivedDate &&
+          req.tests &&
+          req.tests.some((t) => t.status === 'Pending' || t.status === 'InProgress')
+      );
 
       setTestRequests(requestsData);
       setLoading(false);
