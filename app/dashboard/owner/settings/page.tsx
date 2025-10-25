@@ -9,11 +9,6 @@ import {
   Bell, 
   Shield, 
   Database, 
-  Mail, 
-  Globe,
-  Key,
-  Users,
-  Building2,
   AlertTriangle 
 } from 'lucide-react';
 
@@ -61,7 +56,7 @@ export default function SettingsPage() {
     { id: 'backup', name: 'Backup & Data', icon: Database },
   ];
 
-  const handleSettingChange = (section: string, key: string, value: any) => {
+  const handleSettingChange = (section: string, key: string, value: string | number | boolean) => {
     setSettings(prev => ({
       ...prev,
       [section]: {

@@ -16,86 +16,23 @@ import {
   Beaker 
 } from 'lucide-react';
 
+interface Test {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  price: number;
+  turnaroundTime: string;
+  sampleType: string;
+  containerType: string;
+  isActive: boolean;
+  totalOrders: number;
+  monthlyOrders: number;
+}
+
 export default function TestsPage() {
-  const [tests] = useState([
-    {
-      id: '1',
-      code: 'FBC',
-      name: 'Full Hemogram',
-      category: 'HEMATOLOGY',
-      price: 15000,
-      turnaroundTime: '2 hours',
-      sampleType: 'Blood (EDTA)',
-      containerType: 'Purple top tube',
-      isActive: true,
-      totalOrders: 245,
-      monthlyOrders: 28,
-    },
-    {
-      id: '2',
-      code: 'LFT',
-      name: 'Liver Function Tests',
-      category: 'BIOCHEMISTRY',
-      price: 25000,
-      turnaroundTime: '4 hours',
-      sampleType: 'Blood (Serum)',
-      containerType: 'Red top tube',
-      isActive: true,
-      totalOrders: 189,
-      monthlyOrders: 22,
-    },
-    {
-      id: '3',
-      code: 'MP',
-      name: 'Malaria Parasite Test',
-      category: 'HEMATOLOGY',
-      price: 5000,
-      turnaroundTime: '30 mins',
-      sampleType: 'Blood (EDTA)',
-      containerType: 'Purple top tube',
-      isActive: true,
-      totalOrders: 456,
-      monthlyOrders: 52,
-    },
-    {
-      id: '4',
-      code: 'HIV',
-      name: 'HIV Rapid Test',
-      category: 'SEROLOGY',
-      price: 10000,
-      turnaroundTime: '30 mins',
-      sampleType: 'Blood',
-      containerType: 'EDTA tube',
-      isActive: true,
-      totalOrders: 123,
-      monthlyOrders: 15,
-    },
-    {
-      id: '5',
-      code: 'TFT',
-      name: 'Thyroid Function Tests',
-      category: 'HORMONES',
-      price: 45000,
-      turnaroundTime: '24 hours',
-      sampleType: 'Blood (Serum)',
-      containerType: 'Red top tube',
-      isActive: true,
-      totalOrders: 67,
-      monthlyOrders: 8,
-    },
-    {
-      id: '6',
-      code: 'URINE',
-      name: 'Urine Microscopy',
-      category: 'MICROBIOLOGY',
-      price: 10000,
-      turnaroundTime: '2 hours',
-      sampleType: 'Urine',
-      containerType: 'Urine container',
-      isActive: false,
-      totalOrders: 234,
-      monthlyOrders: 0,
-    },
+  const [tests] = useState<Test[]>([
+    // Tests will be loaded from the database - starting with zero baseline
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -279,7 +216,15 @@ export default function TestsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTests.map((test) => (
+                {filteredTests.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                      <TestTube className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">No tests configured</p>
+                      <p className="text-sm">Tests will appear here when you add them to the system catalog.</p>
+                    </td>
+                  </tr>
+                ) : filteredTests.map((test) => (
                   <tr key={test.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">

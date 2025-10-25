@@ -17,10 +17,10 @@ export default function FacilitiesPage() {
       licenseNumber: 'LAB-UG-2024-001',
       isActive: true,
       stats: {
-        totalPatients: 452,
-        monthlyRevenue: 48000000,
-        activeStaff: 8,
-        pendingApprovals: 5,
+        totalPatients: 0,
+        monthlyRevenue: 0,
+        activeStaff: 0,
+        pendingApprovals: 0,
       },
     },
     {
@@ -33,10 +33,10 @@ export default function FacilitiesPage() {
       licenseNumber: 'LAB-UG-2024-002',
       isActive: true,
       stats: {
-        totalPatients: 523,
-        monthlyRevenue: 62000000,
-        activeStaff: 12,
-        pendingApprovals: 4,
+        totalPatients: 0,
+        monthlyRevenue: 0,
+        activeStaff: 0,
+        pendingApprovals: 0,
       },
     },
     {
@@ -49,10 +49,10 @@ export default function FacilitiesPage() {
       licenseNumber: 'LAB-UG-2024-003',
       isActive: true,
       stats: {
-        totalPatients: 270,
-        monthlyRevenue: 35000000,
-        activeStaff: 6,
-        pendingApprovals: 3,
+        totalPatients: 0,
+        monthlyRevenue: 0,
+        activeStaff: 0,
+        pendingApprovals: 0,
       },
     },
   ]);

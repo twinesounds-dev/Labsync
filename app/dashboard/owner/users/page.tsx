@@ -7,7 +7,6 @@ import {
   Users, 
   UserPlus, 
   Search, 
-  Filter, 
   MoreVertical, 
   Edit, 
   Trash2, 
@@ -15,86 +14,23 @@ import {
   Building2 
 } from 'lucide-react';
 
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  facility: string;
+  facilityCode: string;
+  phone: string;
+  isActive: boolean;
+  lastLogin: string;
+  createdAt: string;
+}
+
 export default function UsersPage() {
-  const [users] = useState([
-    {
-      id: '1',
-      firstName: 'John',
-      lastName: 'Mugisha',
-      email: 'owner@labsync.ug',
-      role: 'owner',
-      facility: 'FIRSTLINE - NTUNGAMO',
-      facilityCode: 'FLNT',
-      phone: '+256 700 000 100',
-      isActive: true,
-      lastLogin: '2024-10-25T08:30:00Z',
-      createdAt: '2024-01-15T00:00:00Z',
-    },
-    {
-      id: '2',
-      firstName: 'Sarah',
-      lastName: 'Nakato',
-      email: 'reception.ntungamo@labsync.ug',
-      role: 'receptionist',
-      facility: 'FIRSTLINE - NTUNGAMO',
-      facilityCode: 'FLNT',
-      phone: '+256 700 000 101',
-      isActive: true,
-      lastLogin: '2024-10-25T09:15:00Z',
-      createdAt: '2024-01-20T00:00:00Z',
-    },
-    {
-      id: '3',
-      firstName: 'David',
-      lastName: 'Okello',
-      email: 'clerk.ntungamo@labsync.ug',
-      role: 'clerk',
-      facility: 'FIRSTLINE - NTUNGAMO',
-      facilityCode: 'FLNT',
-      phone: '+256 700 000 102',
-      isActive: true,
-      lastLogin: '2024-10-25T07:45:00Z',
-      createdAt: '2024-02-01T00:00:00Z',
-    },
-    {
-      id: '4',
-      firstName: 'Grace',
-      lastName: 'Namusoke',
-      email: 'labtech.ntungamo@labsync.ug',
-      role: 'lab_tech',
-      facility: 'FIRSTLINE - NTUNGAMO',
-      facilityCode: 'FLNT',
-      phone: '+256 700 000 103',
-      isActive: true,
-      lastLogin: '2024-10-25T08:00:00Z',
-      createdAt: '2024-02-05T00:00:00Z',
-    },
-    {
-      id: '5',
-      firstName: 'Mary',
-      lastName: 'Kwagala',
-      email: 'reception.mbarara@labsync.ug',
-      role: 'receptionist',
-      facility: 'FIRSTLINE - MBARARA',
-      facilityCode: 'FLMB',
-      phone: '+256 700 000 104',
-      isActive: true,
-      lastLogin: '2024-10-24T16:30:00Z',
-      createdAt: '2024-02-10T00:00:00Z',
-    },
-    {
-      id: '6',
-      firstName: 'Peter',
-      lastName: 'Tumusiime',
-      email: 'clerk.mbarara@labsync.ug',
-      role: 'clerk',
-      facility: 'FIRSTLINE - MBARARA',
-      facilityCode: 'FLMB',
-      phone: '+256 700 000 105',
-      isActive: false,
-      lastLogin: '2024-10-20T14:20:00Z',
-      createdAt: '2024-02-15T00:00:00Z',
-    },
+  const [users] = useState<User[]>([
+    // Users will be loaded from the database when facilities add them
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -298,7 +234,15 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">No users found</p>
+                      <p className="text-sm">Users will appear here when facilities add them to the system.</p>
+                    </td>
+                  </tr>
+                ) : filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">

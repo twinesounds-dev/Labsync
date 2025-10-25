@@ -55,27 +55,27 @@ export default function ReportsPage() {
   const quickStats = [
     {
       label: 'Total Revenue (MTD)',
-      value: 'UGX 12.5M',
-      change: '+8.2%',
+      value: 'UGX 0',
+      change: '0%',
       trend: 'up',
     },
     {
       label: 'Total Patients (MTD)',
-      value: '1,245',
-      change: '+12.5%',
+      value: '0',
+      change: '0%',
       trend: 'up',
     },
     {
       label: 'Tests Completed (MTD)',
-      value: '3,456',
-      change: '+5.8%',
+      value: '0',
+      change: '0%',
       trend: 'up',
     },
     {
       label: 'Average Turnaround',
-      value: '2.4 hrs',
-      change: '-15.2%',
-      trend: 'down',
+      value: '0 hrs',
+      change: '0%',
+      trend: 'up',
     },
   ];
 

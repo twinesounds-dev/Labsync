@@ -5,44 +5,22 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { CheckCircle, XCircle, Clock, User, TestTube, Calendar } from 'lucide-react';
 
+interface PendingApproval {
+  id: string;
+  patientName: string;
+  patientId: string;
+  testName: string;
+  testCode: string;
+  facility: string;
+  submittedBy: string;
+  submittedDate: string;
+  urgency: string;
+  status: string;
+}
+
 export default function ApprovalsPage() {
-  const [pendingApprovals] = useState([
-    {
-      id: '1',
-      patientName: 'John Mugisha',
-      patientId: 'FLNT-00123',
-      testName: 'Full Hemogram',
-      testCode: 'FBC',
-      facility: 'FIRSTLINE - NTUNGAMO',
-      submittedBy: 'Grace Namusoke',
-      submittedDate: '2024-10-25T08:30:00Z',
-      urgency: 'Routine',
-      status: 'Pending',
-    },
-    {
-      id: '2',
-      patientName: 'Sarah Nakato',
-      patientId: 'FLMB-00456',
-      testName: 'Liver Function Tests',
-      testCode: 'LFT',
-      facility: 'FIRSTLINE - MBARARA',
-      submittedBy: 'Agnes Nansubuga',
-      submittedDate: '2024-10-25T09:15:00Z',
-      urgency: 'Urgent',
-      status: 'Pending',
-    },
-    {
-      id: '3',
-      patientName: 'David Okello',
-      patientId: 'PCMC-00789',
-      testName: 'Malaria Parasite Test',
-      testCode: 'MP',
-      facility: 'PRIMECURE MEDICAL',
-      submittedBy: 'Mary Kwagala',
-      submittedDate: '2024-10-25T10:00:00Z',
-      urgency: 'STAT',
-      status: 'Pending',
-    },
+  const [pendingApprovals] = useState<PendingApproval[]>([
+    // Pending approvals will be loaded from the database - starting with zero baseline
   ]);
 
   const getUrgencyColor = (urgency: string) => {
@@ -94,7 +72,7 @@ export default function ApprovalsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-orange-600 font-medium">Pending Approvals</p>
-                <p className="text-3xl font-bold text-orange-900 mt-1">12</p>
+                <p className="text-3xl font-bold text-orange-900 mt-1">0</p>
               </div>
               <Clock className="w-12 h-12 text-orange-500 opacity-50" />
             </div>
@@ -104,7 +82,7 @@ export default function ApprovalsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-red-600 font-medium">STAT Priority</p>
-                <p className="text-3xl font-bold text-red-900 mt-1">3</p>
+                <p className="text-3xl font-bold text-red-900 mt-1">0</p>
               </div>
               <TestTube className="w-12 h-12 text-red-500 opacity-50" />
             </div>
@@ -114,7 +92,7 @@ export default function ApprovalsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 font-medium">Approved Today</p>
-                <p className="text-3xl font-bold text-green-900 mt-1">28</p>
+                <p className="text-3xl font-bold text-green-900 mt-1">0</p>
               </div>
               <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
             </div>
@@ -124,7 +102,7 @@ export default function ApprovalsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 font-medium">Rejected Today</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">2</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">0</p>
               </div>
               <XCircle className="w-12 h-12 text-gray-500 opacity-50" />
             </div>
@@ -160,7 +138,15 @@ export default function ApprovalsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {pendingApprovals.map((approval) => (
+                {pendingApprovals.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <CheckCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">No pending approvals</p>
+                      <p className="text-sm">Test results awaiting approval will appear here.</p>
+                    </td>
+                  </tr>
+                ) : pendingApprovals.map((approval) => (
                   <tr key={approval.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
