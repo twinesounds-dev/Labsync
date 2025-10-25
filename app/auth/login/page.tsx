@@ -78,10 +78,15 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Demo Credentials:</p>
           <div className="mt-2 space-y-1 text-xs">
-            <p><strong>Owner:</strong> owner@labsync.ug / password123</p>
-            <p><strong>Receptionist:</strong> reception.ntungamo@labsync.ug / password123</p>
-            <p><strong>Clerk:</strong> clerk.ntungamo@labsync.ug / password123</p>
-            <p><strong>Lab Tech:</strong> labtech.ntungamo@labsync.ug / password123</p>
+            <p><strong>Owner:</strong> admin@firstlinelab.ug / Admin123!</p>
+            <p><strong>Receptionist:</strong> reception@firstlinelab.ug / Reception123!</p>
+            <p><strong>Clerk:</strong> clerk@firstlinelab.ug / Clerk123!</p>
+            <p><strong>Lab Tech:</strong> labtech@firstlinelab.ug / LabTech123!</p>
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-700">
+              <strong>First time setup:</strong> Visit <code>/api/seed</code> (POST) to initialize the database with sample data.
+            </p>
           </div>
         </div>
       </div>

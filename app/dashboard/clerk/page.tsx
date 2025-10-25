@@ -1,18 +1,68 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { TestTube, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ClerkDashboard() {
-  const [stats] = useState({
-    samplesAwaiting: 8,
-    samplesProcessedToday: 15,
-    testsPending: 12,
-    sampleRejections: 2,
+  const [stats, setStats] = useState({
+    samplesAwaiting: 0,
+    samplesProcessedToday: 0,
+    testsPending: 0,
+    sampleRejections: 0,
   });
+
+  const loadDashboardStats = async () => {
+    try {
+      // Get all test requests
+      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS);
+      
+      // Get today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Calculate samples awaiting reception
+      const samplesAwaiting = testRequests.filter((tr: any) => 
+        tr.overallStatus === 'Pending' && tr.paymentStatus === 'Paid'
+      ).length;
+
+      // Calculate samples processed today
+      const samplesProcessedToday = testRequests.filter((tr: any) => {
+        const receivedDate = tr.sampleReceivedDate?.toDate ? tr.sampleReceivedDate.toDate() : new Date(tr.sampleReceivedDate);
+        return receivedDate >= today && tr.overallStatus !== 'Pending';
+      }).length;
+
+      // Calculate tests pending (samples received but not yet in progress)
+      const testsPending = testRequests.filter((tr: any) => 
+        tr.overallStatus === 'SampleReceived'
+      ).length;
+
+      // Sample rejections would be tracked separately - for now set to 0
+      const sampleRejections = 0;
+
+      setStats({
+        samplesAwaiting,
+        samplesProcessedToday,
+        testsPending,
+        sampleRejections,
+      });
+    } catch (error) {
+      console.error('Error loading clerk dashboard stats:', error);
+      setStats({
+        samplesAwaiting: 0,
+        samplesProcessedToday: 0,
+        testsPending: 0,
+        sampleRejections: 0,
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardStats();
+  }, []);
 
   return (
     <DashboardLayout>

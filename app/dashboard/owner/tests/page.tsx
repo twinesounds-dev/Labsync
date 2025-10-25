@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import AddTestModal from '@/components/modals/AddTestModal';
+import ImportTestsModal from '@/components/modals/ImportTestsModal';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { 
   TestTube, 
   Plus, 
@@ -31,13 +34,29 @@ interface Test {
 }
 
 export default function TestsPage() {
-  const [tests] = useState<Test[]>([
-    // Tests will be loaded from the database - starting with zero baseline
-  ]);
-
+  const [tests, setTests] = useState<Test[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+
+  const loadTests = async () => {
+    try {
+      setLoading(true);
+      const testsData = await firestoreService.getAll<Test>(COLLECTIONS.TESTS);
+      setTests(testsData);
+    } catch (error) {
+      console.error('Error loading tests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTests();
+  }, []);
 
   const categories = ['HEMATOLOGY', 'BIOCHEMISTRY', 'MICROBIOLOGY', 'SEROLOGY', 'HORMONES'];
 
@@ -87,11 +106,17 @@ export default function TestsPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Test Management</h1>
           <div className="flex space-x-3">
-            <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+            <button 
+              onClick={() => setShowImportModal(true)}
+              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
+            >
               <Filter className="w-4 h-4 mr-2" />
               Import Tests
             </button>
-            <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center">
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add New Test
             </button>
@@ -282,6 +307,18 @@ export default function TestsPage() {
             </table>
           </div>
         </Card>
+
+        <AddTestModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onTestAdded={loadTests}
+        />
+
+        <ImportTestsModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onTestsImported={loadTests}
+        />
       </div>
     </DashboardLayout>
   );
