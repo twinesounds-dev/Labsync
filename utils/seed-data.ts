@@ -57,7 +57,7 @@ export async function seedDatabase() {
         };
         
         // Only add storageRequirements if it exists
-        if ('storageRequirements' in testData && testData.storageRequirements) {
+        if ('storageRequirements' in testData && testData.storageRequirements && typeof testData.storageRequirements === 'string') {
           testDoc.storageRequirements = testData.storageRequirements;
         }
         
@@ -220,13 +220,6 @@ export async function generateSamplePatients(facilityId: string, count: number =
       urgency: ['Routine', 'Urgent', 'STAT'][Math.floor(Math.random() * 3)] as 'Routine' | 'Urgent' | 'STAT',
       paymentType: ['Cash', 'Insurance', 'Corporate'][Math.floor(Math.random() * 3)] as 'Cash' | 'Insurance' | 'Corporate',
       isExternalReferral: Math.random() > 0.7,
-      createdBy: 'demo-reception-ntungamo',
-    });
-  }
-  
-  console.log(`✓ Generated ${count} sample patients`);
-}
-Referral: Math.random() > 0.7,
       createdBy: 'demo-reception-ntungamo',
     });
   }
