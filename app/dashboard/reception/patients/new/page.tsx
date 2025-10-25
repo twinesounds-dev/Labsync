@@ -77,6 +77,7 @@ export default function NewPatientPage() {
       const facilityCode = (facility as { code: string }).code;
       const patientId = await generatePatientId(facilityCode);
 
+      // Build patient data object, only including optional fields if they have values
       const patientData: Partial<Patient> = {
         patientId,
         facilityId: userProfile.facilityId,
@@ -87,26 +88,46 @@ export default function NewPatientPage() {
         gender: formData.gender as 'Male' | 'Female',
         maritalStatus: formData.maritalStatus as 'Single' | 'Married' | 'Divorced' | 'Widowed',
         phoneNumber: formData.phoneNumber,
-        email: formData.email || undefined,
         address: {
           village: formData.village,
           parish: formData.parish,
           subCounty: formData.subCounty,
           district: formData.district,
         },
-        nationalID: formData.nationalID || undefined,
-        NIN: formData.NIN || undefined,
-        referringDoctor: formData.referringDoctor || undefined,
-        hospitalClinic: formData.hospitalClinic || undefined,
-        clinicalHistory: formData.clinicalHistory || undefined,
         urgency: formData.urgency as 'Routine' | 'Urgent' | 'STAT',
         paymentType: formData.paymentType as 'Cash' | 'Insurance' | 'Corporate',
-        insuranceProvider: formData.insuranceProvider || undefined,
-        insuranceNumber: formData.insuranceNumber || undefined,
-        corporateClient: formData.corporateClient || undefined,
         isExternalReferral: false,
         createdBy: userProfile.id,
       };
+
+      // Add optional fields only if they have values
+      if (formData.email?.trim()) {
+        patientData.email = formData.email.trim();
+      }
+      if (formData.nationalID?.trim()) {
+        patientData.nationalID = formData.nationalID.trim();
+      }
+      if (formData.NIN?.trim()) {
+        patientData.NIN = formData.NIN.trim();
+      }
+      if (formData.referringDoctor?.trim()) {
+        patientData.referringDoctor = formData.referringDoctor.trim();
+      }
+      if (formData.hospitalClinic?.trim()) {
+        patientData.hospitalClinic = formData.hospitalClinic.trim();
+      }
+      if (formData.clinicalHistory?.trim()) {
+        patientData.clinicalHistory = formData.clinicalHistory.trim();
+      }
+      if (formData.insuranceProvider?.trim()) {
+        patientData.insuranceProvider = formData.insuranceProvider.trim();
+      }
+      if (formData.insuranceNumber?.trim()) {
+        patientData.insuranceNumber = formData.insuranceNumber.trim();
+      }
+      if (formData.corporateClient?.trim()) {
+        patientData.corporateClient = formData.corporateClient.trim();
+      }
 
       const newPatientId = await firestoreService.create<Patient>(
         COLLECTIONS.PATIENTS,
