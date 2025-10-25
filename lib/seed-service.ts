@@ -1,6 +1,6 @@
 import { firestoreService, COLLECTIONS } from './firestore';
 import { userService } from './user-service';
-import { Facility, Test, TestCategory } from '@/types';
+import { Facility, TestCategory } from '@/types';
 
 export const seedService = {
   async seedFacilities(): Promise<void> {
@@ -239,7 +239,7 @@ export const seedService = {
       ];
 
       for (const test of tests) {
-        await firestoreService.create<Test>(COLLECTIONS.TESTS, test);
+        await firestoreService.create(COLLECTIONS.TESTS, test);
       }
 
       console.log('Common tests seeded successfully');
@@ -301,8 +301,8 @@ export const seedService = {
         try {
           await userService.createUser(user);
           console.log(`Created user: ${user.email}`);
-        } catch (error: any) {
-          if (error.message.includes('email-already-in-use')) {
+        } catch (error: unknown) {
+          if (error instanceof Error && error.message.includes('email-already-in-use')) {
             console.log(`User ${user.email} already exists, skipping...`);
           } else {
             console.error(`Error creating user ${user.email}:`, error);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
@@ -23,54 +23,80 @@ export default function ReceptionDashboard() {
     patientsWaitingForReports: 0,
   });
 
-  const loadDashboardStats = async () => {
+  const convertToDate = (dateValue?: { toDate?: () => Date } | Date | string): Date => {
+    if (!dateValue) return new Date();
+    if (typeof dateValue === 'object' && 'toDate' in dateValue && dateValue.toDate) {
+      return dateValue.toDate();
+    }
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    return new Date(dateValue as string);
+  };
+
+  const loadDashboardStats = useCallback(async () => {
     try {
       // Get all patients
-      const patients = await firestoreService.getAll(COLLECTIONS.PATIENTS);
+      const patients = await firestoreService.getAll(COLLECTIONS.PATIENTS) as Array<{
+        registrationDate?: { toDate?: () => Date } | Date | string;
+        facilityId?: string;
+        id?: string;
+      }>;
       
       // Get today's patients
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayPatients = patients.filter((p: any) => {
-        const registrationDate = new Date(p.registrationDate?.toDate ? p.registrationDate.toDate() : p.registrationDate);
+      const todayPatients = patients.filter(p => {
+        const registrationDate = convertToDate(p.registrationDate);
         return registrationDate >= today;
       });
 
       // Get all payments
-      const payments = await firestoreService.getAll(COLLECTIONS.PAYMENTS);
+      const payments = await firestoreService.getAll(COLLECTIONS.PAYMENTS) as Array<{
+        paymentDate?: { toDate?: () => Date } | Date | string;
+        amountPaid?: number;
+        status?: string;
+        patientId?: string;
+      }>;
       
       // Calculate today's revenue
       const todayRevenue = payments
-        .filter((p: any) => {
-          const paymentDate = new Date(p.paymentDate?.toDate ? p.paymentDate.toDate() : p.paymentDate);
+        .filter(p => {
+          const paymentDate = convertToDate(p.paymentDate);
           return paymentDate >= today;
         })
-        .reduce((sum: number, p: any) => sum + (p.amountPaid || 0), 0);
+        .reduce((sum: number, p) => sum + (p.amountPaid || 0), 0);
 
       // Calculate total revenue
-      const totalRevenue = payments.reduce((sum: number, p: any) => sum + (p.amountPaid || 0), 0);
+      const totalRevenue = payments.reduce((sum: number, p) => sum + (p.amountPaid || 0), 0);
 
       // Get test requests
-      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS);
+      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS) as Array<{
+        requestDate?: { toDate?: () => Date } | Date | string;
+        overallStatus?: string;
+        tests?: unknown[];
+      }>;
       
       // Calculate today's tests
-      const todayTests = testRequests.filter((tr: any) => {
-        const requestDate = new Date(tr.requestDate?.toDate ? tr.requestDate.toDate() : tr.requestDate);
+      const todayTests = testRequests.filter(tr => {
+        const requestDate = convertToDate(tr.requestDate);
         return requestDate >= today;
       });
 
       // Calculate pending payments
-      const pendingPayments = payments.filter((p: any) => p.status === 'Pending' || p.status === 'Partial').length;
+      const pendingPayments = payments.filter(p => p.status === 'Pending' || p.status === 'Partial').length;
 
       // Calculate patients waiting for samples
-      const patientsWaitingForSamples = testRequests.filter((tr: any) => tr.overallStatus === 'Pending').length;
+      const patientsWaitingForSamples = testRequests.filter(tr => tr.overallStatus === 'Pending').length;
 
       // Calculate patients waiting for reports
-      const patientsWaitingForReports = testRequests.filter((tr: any) => tr.overallStatus === 'Approved').length;
+      const patientsWaitingForReports = testRequests.filter(tr => tr.overallStatus === 'Approved').length;
 
       // Get pending approvals
-      const testResults = await firestoreService.getAll(COLLECTIONS.TEST_RESULTS);
-      const pendingApprovals = testResults.filter((tr: any) => tr.status === 'Submitted').length;
+      const testResults = await firestoreService.getAll(COLLECTIONS.TEST_RESULTS) as Array<{
+        status?: string;
+      }>;
+      const pendingApprovals = testResults.filter(tr => tr.status === 'Submitted').length;
 
       setStats({
         totalPatients: patients.length,
@@ -78,7 +104,7 @@ export default function ReceptionDashboard() {
         totalRevenue,
         todayRevenue,
         pendingApprovals,
-        testsToday: todayTests.reduce((sum: number, tr: any) => sum + (tr.tests?.length || 0), 0),
+        testsToday: todayTests.reduce((sum: number, tr) => sum + (tr.tests?.length || 0), 0),
         pendingPayments,
         patientsWaitingForSamples,
         patientsWaitingForReports,
@@ -98,11 +124,11 @@ export default function ReceptionDashboard() {
         patientsWaitingForReports: 0,
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadDashboardStats();
-  }, []);
+  }, [loadDashboardStats]);
 
   return (
     <DashboardLayout>

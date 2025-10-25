@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, User, Mail, Phone, Building2, Shield, Eye, EyeOff } from 'lucide-react';
 import { UserRole } from '@/types';
-import { userService, CreateUserData } from '@/lib/user-service';
+import { userService } from '@/lib/user-service';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -72,8 +72,8 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }: AddUserMo
 
       onUserAdded();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create user');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
@@ -15,28 +15,43 @@ export default function ClerkDashboard() {
     sampleRejections: 0,
   });
 
-  const loadDashboardStats = async () => {
+  const convertToDate = (dateValue?: { toDate?: () => Date } | Date | string): Date => {
+    if (!dateValue) return new Date();
+    if (typeof dateValue === 'object' && 'toDate' in dateValue && dateValue.toDate) {
+      return dateValue.toDate();
+    }
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    return new Date(dateValue as string);
+  };
+
+  const loadDashboardStats = useCallback(async () => {
     try {
       // Get all test requests
-      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS);
+      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS) as Array<{
+        overallStatus?: string;
+        paymentStatus?: string;
+        sampleReceivedDate?: { toDate?: () => Date } | Date | string;
+      }>;
       
       // Get today's date
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       // Calculate samples awaiting reception
-      const samplesAwaiting = testRequests.filter((tr: any) => 
+      const samplesAwaiting = testRequests.filter(tr => 
         tr.overallStatus === 'Pending' && tr.paymentStatus === 'Paid'
       ).length;
 
       // Calculate samples processed today
-      const samplesProcessedToday = testRequests.filter((tr: any) => {
-        const receivedDate = tr.sampleReceivedDate?.toDate ? tr.sampleReceivedDate.toDate() : new Date(tr.sampleReceivedDate);
+      const samplesProcessedToday = testRequests.filter(tr => {
+        const receivedDate = convertToDate(tr.sampleReceivedDate);
         return receivedDate >= today && tr.overallStatus !== 'Pending';
       }).length;
 
       // Calculate tests pending (samples received but not yet in progress)
-      const testsPending = testRequests.filter((tr: any) => 
+      const testsPending = testRequests.filter(tr => 
         tr.overallStatus === 'SampleReceived'
       ).length;
 
@@ -58,11 +73,11 @@ export default function ClerkDashboard() {
         sampleRejections: 0,
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadDashboardStats();
-  }, []);
+  }, [loadDashboardStats]);
 
   return (
     <DashboardLayout>

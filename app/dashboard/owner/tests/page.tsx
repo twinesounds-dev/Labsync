@@ -35,7 +35,6 @@ interface Test {
 
 export default function TestsPage() {
   const [tests, setTests] = useState<Test[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,13 +43,10 @@ export default function TestsPage() {
 
   const loadTests = async () => {
     try {
-      setLoading(true);
       const testsData = await firestoreService.getAll<Test>(COLLECTIONS.TESTS);
       setTests(testsData);
     } catch (error) {
       console.error('Error loading tests:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

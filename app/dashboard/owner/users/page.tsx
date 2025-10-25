@@ -32,7 +32,6 @@ interface User {
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
@@ -40,13 +39,10 @@ export default function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      setLoading(true);
       const usersData = await firestoreService.getAll<User>(COLLECTIONS.USERS);
       setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

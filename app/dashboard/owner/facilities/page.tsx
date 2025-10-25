@@ -11,20 +11,16 @@ import { Building2, MapPin, Phone, Mail, Users, TrendingUp, Edit } from 'lucide-
 
 export default function FacilitiesPage() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
 
   const loadFacilities = async () => {
     try {
-      setLoading(true);
       const facilitiesData = await firestoreService.getAll<Facility>(COLLECTIONS.FACILITIES);
       setFacilities(facilitiesData);
     } catch (error) {
       console.error('Error loading facilities:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

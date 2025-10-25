@@ -60,8 +60,8 @@ export default function EditFacilityModal({ isOpen, onClose, onFacilityUpdated, 
       await firestoreService.update(COLLECTIONS.FACILITIES, facility.id, formData);
       onFacilityUpdated();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update facility');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update facility');
     } finally {
       setLoading(false);
     }

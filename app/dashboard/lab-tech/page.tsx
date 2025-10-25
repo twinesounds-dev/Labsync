@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
@@ -15,34 +15,52 @@ export default function LabTechDashboard() {
     qcAlerts: 0,
   });
 
-  const loadDashboardStats = async () => {
+  const convertToDate = (dateValue?: { toDate?: () => Date } | Date | string): Date => {
+    if (!dateValue) return new Date();
+    if (typeof dateValue === 'object' && 'toDate' in dateValue && dateValue.toDate) {
+      return dateValue.toDate();
+    }
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    return new Date(dateValue as string);
+  };
+
+  const loadDashboardStats = useCallback(async () => {
     try {
       // Get all test requests
-      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS);
+      const testRequests = await firestoreService.getAll(COLLECTIONS.TEST_REQUESTS) as Array<{
+        overallStatus?: string;
+        urgency?: string;
+        tests?: unknown[];
+      }>;
       
       // Get all test results
-      const testResults = await firestoreService.getAll(COLLECTIONS.TEST_RESULTS);
+      const testResults = await firestoreService.getAll(COLLECTIONS.TEST_RESULTS) as Array<{
+        datePerformed?: { toDate?: () => Date } | Date | string;
+        status?: string;
+      }>;
       
       // Get today's date
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       // Calculate pending tests (samples received and ready for testing)
-      const pendingTests = testRequests.filter((tr: any) => 
+      const pendingTests = testRequests.filter(tr => 
         tr.overallStatus === 'SampleReceived' || tr.overallStatus === 'InProgress'
-      ).reduce((sum: number, tr: any) => sum + (tr.tests?.length || 0), 0);
+      ).reduce((sum: number, tr) => sum + (tr.tests?.length || 0), 0);
 
       // Calculate tests completed today
-      const completedToday = testResults.filter((tr: any) => {
-        const performedDate = tr.datePerformed?.toDate ? tr.datePerformed.toDate() : new Date(tr.datePerformed);
+      const completedToday = testResults.filter(tr => {
+        const performedDate = convertToDate(tr.datePerformed);
         return performedDate >= today && tr.status === 'Submitted';
       }).length;
 
       // Calculate urgent tests (STAT priority)
-      const urgentTests = testRequests.filter((tr: any) => {
+      const urgentTests = testRequests.filter(tr => {
         // Assuming we have urgency field in test requests
         return tr.urgency === 'STAT' && (tr.overallStatus === 'SampleReceived' || tr.overallStatus === 'InProgress');
-      }).reduce((sum: number, tr: any) => sum + (tr.tests?.length || 0), 0);
+      }).reduce((sum: number, tr) => sum + (tr.tests?.length || 0), 0);
 
       // QC alerts would be tracked separately - for now set to 0
       const qcAlerts = 0;
@@ -62,11 +80,11 @@ export default function LabTechDashboard() {
         qcAlerts: 0,
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadDashboardStats();
-  }, []);
+  }, [loadDashboardStats]);
 
   return (
     <DashboardLayout>

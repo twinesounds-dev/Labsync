@@ -37,9 +37,9 @@ export const userService = {
       } as Partial<User>);
 
       return userId;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating user:', error);
-      throw new Error(error.message || 'Failed to create user');
+      throw new Error(error instanceof Error ? error.message : 'Failed to create user');
     }
   },
 

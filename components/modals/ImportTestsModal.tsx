@@ -56,17 +56,17 @@ HOR001,Thyroid Function Test,HORMONES,45000,24 hours,Serum,Plain Tube,Store at 2
     window.URL.revokeObjectURL(url);
   };
 
-  const parseCSV = (csvText: string): any[] => {
+  const parseCSV = (csvText: string): Record<string, string>[] => {
     const lines = csvText.split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
-    const data = [];
+    const data: Record<string, string>[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
       const values = line.split(',').map(v => v.trim());
-      const row: any = {};
+      const row: Record<string, string> = {};
 
       headers.forEach((header, index) => {
         row[header] = values[index] || '';
@@ -78,7 +78,7 @@ HOR001,Thyroid Function Test,HORMONES,45000,24 hours,Serum,Plain Tube,Store at 2
     return data;
   };
 
-  const validateTestData = (test: any): string[] => {
+  const validateTestData = (test: Record<string, string>): string[] => {
     const errors: string[] = [];
 
     if (!test.code) errors.push('Test code is required');
@@ -121,9 +121,9 @@ HOR001,Thyroid Function Test,HORMONES,45000,24 hours,Serum,Plain Tube,Store at 2
           const existingTests = await firestoreService.queryDocuments(
             COLLECTIONS.TESTS,
             []
-          );
+          ) as Array<{ code?: string }>;
           
-          const duplicate = existingTests.find((t: any) => t.code === testData.code);
+          const duplicate = existingTests.find(t => t.code === testData.code);
           if (duplicate) {
             duplicates++;
             continue;
@@ -143,8 +143,8 @@ HOR001,Thyroid Function Test,HORMONES,45000,24 hours,Serum,Plain Tube,Store at 2
           });
 
           imported++;
-        } catch (err: any) {
-          errors.push(`Row ${imported + duplicates + 1}: ${err.message}`);
+        } catch (err: unknown) {
+          errors.push(`Row ${imported + duplicates + 1}: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
       }
 
@@ -158,8 +158,8 @@ HOR001,Thyroid Function Test,HORMONES,45000,24 hours,Serum,Plain Tube,Store at 2
       if (imported > 0) {
         onTestsImported();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to import tests');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to import tests');
     } finally {
       setLoading(false);
     }

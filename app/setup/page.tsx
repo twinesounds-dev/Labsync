@@ -5,7 +5,7 @@ import { Database, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 
 export default function SetupPage() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{ success: boolean; message: string; details?: Record<string, string> } | null>(null);
   const [error, setError] = useState('');
 
   const handleSeedDatabase = async () => {
@@ -28,8 +28,8 @@ export default function SetupPage() {
       } else {
         setError(data.error || 'Failed to seed database');
       }
-    } catch (err: any) {
-      setError(err.message || 'Network error occurred');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Network error occurred');
     } finally {
       setLoading(false);
     }
