@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ArrowLeft, Download, CheckCircle, XCircle, Printer } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle, XCircle, Printer, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
 import { TestResult, TestRequest } from '@/types';
@@ -315,6 +315,16 @@ export default function TestResultDetailPage() {
                     <span>Print Report</span>
                   </Button>
                 )}
+
+                <Link href={`/dashboard/reception/test-results/${result.id}/report`}>
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center space-x-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>View Full Report</span>
+                  </Button>
+                </Link>
 
                 <Button
                   variant="outline"

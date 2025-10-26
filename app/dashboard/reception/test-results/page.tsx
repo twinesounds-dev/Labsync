@@ -262,11 +262,20 @@ export default function TestResultsPage() {
                         </Button>
                       </Link>
                       
-                      {result.status === 'Approved' && (
-                        <Button size="sm" className="flex items-center space-x-2">
-                          <Download className="w-4 h-4" />
-                          <span>Print Report</span>
+                      <Link href={`/dashboard/reception/tracking/${request?.patient?.id}`}>
+                        <Button size="sm" variant="outline" className="flex items-center space-x-2">
+                          <Eye className="w-4 h-4" />
+                          <span>Track Patient</span>
                         </Button>
+                      </Link>
+
+                      {result.status === 'Approved' && (
+                        <Link href={`/dashboard/reception/test-results/${result.id}/report`}>
+                          <Button size="sm" className="flex items-center space-x-2">
+                            <Download className="w-4 h-4" />
+                            <span>Print Report</span>
+                          </Button>
+                        </Link>
                       )}
                     </div>
                   </div>

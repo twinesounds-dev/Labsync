@@ -162,13 +162,25 @@ export default function ClerkDashboard() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/clerk/samples">
+          <Link href="/dashboard/clerk/sample-collection">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
               <div className="text-center py-6">
                 <TestTube className="w-12 h-12 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">Receive Samples</h3>
+                <h3 className="text-lg font-semibold">Sample Collection</h3>
                 <p className="text-sm opacity-90 mt-1">
-                  Process incoming samples
+                  Collect & QA samples
+                </p>
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/clerk/samples">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-indigo-600 text-white">
+              <div className="text-center py-6">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold">Sample Tracking</h3>
+                <p className="text-sm opacity-90 mt-1">
+                  Track sample status
                 </p>
               </div>
             </Card>
