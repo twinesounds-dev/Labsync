@@ -150,37 +150,25 @@ export default function ClerkDashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href="/dashboard/clerk/samples">
+          <Link href="/dashboard/clerk/forms">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
+              <div className="text-center py-6">
+                <AlertCircle className="w-12 h-12 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold">Request Forms</h3>
+                <p className="text-sm opacity-90 mt-1">
+                  Review and select tests for patients
+                </p>
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/clerk/samples">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
               <div className="text-center py-6">
                 <TestTube className="w-12 h-12 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold">Receive Samples</h3>
                 <p className="text-sm opacity-90 mt-1">
                   Process incoming samples
-                </p>
-              </div>
-            </Card>
-          </Link>
-
-          <Link href="/dashboard/clerk/tests">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
-              <div className="text-center py-6">
-                <CheckCircle className="w-12 h-12 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">Select Tests</h3>
-                <p className="text-sm opacity-90 mt-1">
-                  Choose tests for samples
-                </p>
-              </div>
-            </Card>
-          </Link>
-
-          <Link href="/dashboard/clerk/forms">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-indigo-600 text-white">
-              <div className="text-center py-6">
-                <AlertCircle className="w-12 h-12 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">External Forms</h3>
-                <p className="text-sm opacity-90 mt-1">
-                  Process external requests
                 </p>
               </div>
             </Card>
