@@ -75,7 +75,7 @@ export default function ReceptionDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Link href="/dashboard/reception/patients/new">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
               <div className="text-center py-6">
@@ -92,6 +92,16 @@ export default function ReceptionDashboard() {
                 <Receipt className="w-12 h-12 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold">Process Payment</h3>
                 <p className="text-sm opacity-90 mt-1">Record patient payments</p>
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/reception/test-results">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-green-600 text-white">
+              <div className="text-center py-6">
+                <TestTube className="w-12 h-12 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold">Test Results</h3>
+                <p className="text-sm opacity-90 mt-1">View and approve test results</p>
               </div>
             </Card>
           </Link>

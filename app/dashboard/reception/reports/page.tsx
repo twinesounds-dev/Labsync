@@ -6,11 +6,11 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { FileText, Search, Printer, Download } from 'lucide-react';
+import { FileText, Search, Printer } from 'lucide-react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firestore';
-import { Patient, TestResult } from '@/types';
+import { TestResult } from '@/types';
 import { format } from 'date-fns';
 
 export default function ReportsPage() {

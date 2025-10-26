@@ -144,6 +144,8 @@ export interface TestRequest {
   sampleReceivedDate?: Date;
   sampleReceivedBy?: string; // User ID (Clerk)
   clerkNotes?: string;
+  sampleCollectionData?: any; // Sample collection and QA data
+  sampleQualityNotes?: string;
   
   // Payment
   paymentStatus: 'Pending' | 'Partial' | 'Paid';
@@ -189,7 +191,11 @@ export interface TestResult {
   approvedBy?: string; // User ID (Owner)
   approvedByUser?: User;
   
-  status: 'Pending' | 'Submitted' | 'Approved' | 'Rejected';
+  // Printing Information
+  printedBy?: string;
+  printedDate?: Date;
+  
+  status: 'Pending' | 'Submitted' | 'Approved' | 'Rejected' | 'Printed';
   rejectionReason?: string;
   
   createdAt: Date;

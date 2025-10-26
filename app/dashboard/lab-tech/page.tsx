@@ -159,7 +159,7 @@ export default function LabTechDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link href="/dashboard/lab-tech/requests">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
               <div className="text-center py-6">
@@ -179,6 +179,18 @@ export default function LabTechDashboard() {
                 <h3 className="text-lg font-semibold">Pending Tests</h3>
                 <p className="text-sm opacity-90 mt-1">
                   Tests awaiting results
+                </p>
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/lab-tech/results">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-green-600 text-white">
+              <div className="text-center py-6">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold">Enter Results</h3>
+                <p className="text-sm opacity-90 mt-1">
+                  Enter test results
                 </p>
               </div>
             </Card>

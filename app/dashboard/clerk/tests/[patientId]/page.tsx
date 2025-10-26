@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
-import { Patient, Test, TestCategory, TestRequest } from '@/types';
+import { Patient, Test, TestRequest } from '@/types';
 
 export default function TestSelectionPage() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function TestSelectionPage() {
   const { userProfile } = useAuth();
 
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [categories, setCategories] = useState<TestCategory[]>([]);
+  // const [categories, setCategories] = useState<TestCategory[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [selectedTests, setSelectedTests] = useState<Test[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,14 +49,14 @@ export default function TestSelectionPage() {
       where('isActive', '==', true)
     );
 
-    const unsubscribe = onSnapshot(categoriesQuery, (snapshot) => {
-      const categoriesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-      })) as TestCategory[];
+    const unsubscribe = onSnapshot(categoriesQuery, () => {
+      // const categoriesData = snapshot.docs.map((doc) => ({
+      //   id: doc.id,
+      //   ...doc.data(),
+      //   createdAt: doc.data().createdAt?.toDate() || new Date(),
+      // })) as TestCategory[];
 
-      setCategories(categoriesData);
+      // setCategories(categoriesData);
     });
 
     return () => unsubscribe();
