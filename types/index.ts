@@ -189,7 +189,7 @@ export interface TestResult {
   approvedBy?: string; // User ID (Owner)
   approvedByUser?: User;
   
-  status: 'Pending' | 'Submitted' | 'Approved' | 'Rejected';
+  status: 'Pending' | 'Submitted' | 'Approved' | 'Rejected' | 'Printed';
   rejectionReason?: string;
   
   createdAt: Date;

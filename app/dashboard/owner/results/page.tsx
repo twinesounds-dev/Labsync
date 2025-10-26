@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input';
 import { FileText, Search, Filter, CheckCircle, XCircle, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import * as FirebaseFirestore from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
 import { TestResult, TestRequest } from '@/types';
@@ -55,7 +56,7 @@ export default function OwnerResultsPage() {
             where('__name__', '==', requestId)
           );
           
-          const requestSnapshot = await new Promise<any>((resolve) => {
+          const requestSnapshot = await new Promise<FirebaseFirestore.QuerySnapshot>((resolve) => {
             const unsubscribe = onSnapshot(requestQuery, (snapshot) => {
               unsubscribe();
               resolve(snapshot);

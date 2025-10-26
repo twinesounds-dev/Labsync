@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
@@ -12,7 +12,7 @@ import { COLLECTIONS, firestoreService } from '@/lib/firestore';
 import { TestResult, TestRequest } from '@/types';
 
 export default function TestResultDetailPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const params = useParams();
   const resultId = params.resultId as string;
   const { userProfile } = useAuth();
@@ -33,7 +33,7 @@ export default function TestResultDetailPage() {
         setResult(resultData);
 
         // Fetch corresponding test request
-        if (resultData.testRequestId) {
+        if (resultData?.testRequestId) {
           const requestData = await firestoreService.getById<TestRequest>(
             COLLECTIONS.TEST_REQUESTS,
             resultData.testRequestId
@@ -189,8 +189,8 @@ export default function TestResultDetailPage() {
                   <div className="font-medium">{request?.patient?.gender}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Age</div>
-                  <div className="font-medium">{request?.patient?.age}</div>
+                  <div className="text-sm text-gray-600">DOB</div>
+                  <div className="font-medium">{request?.patient?.dateOfBirth?.toLocaleDateString()}</div>
                 </div>
               </div>
             </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
@@ -12,7 +12,7 @@ import { COLLECTIONS, firestoreService } from '@/lib/firestore';
 import { TestResult, TestRequest } from '@/types';
 
 export default function OwnerResultDetailPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const params = useParams();
   const resultId = params.resultId as string;
   const { userProfile } = useAuth();
@@ -33,7 +33,7 @@ export default function OwnerResultDetailPage() {
         setResult(resultData);
 
         // Fetch corresponding test request
-        if (resultData.testRequestId) {
+        if (resultData?.testRequestId) {
           const requestData = await firestoreService.getById<TestRequest>(
             COLLECTIONS.TEST_REQUESTS,
             resultData.testRequestId
@@ -188,8 +188,8 @@ export default function OwnerResultDetailPage() {
                   <div className="font-medium">{request?.patient?.gender}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">Age</div>
-                  <div className="font-medium">{request?.patient?.age}</div>
+                  <div className="text-sm text-gray-600">DOB</div>
+                  <div className="font-medium">{request?.patient?.dateOfBirth?.toLocaleDateString()}</div>
                 </div>
               </div>
 
@@ -318,7 +318,7 @@ export default function OwnerResultDetailPage() {
                         <li>• Verify all values are within expected ranges</li>
                         <li>• Check for any critical values requiring immediate attention</li>
                         <li>• Review lab technician notes for any concerns</li>
-                        <li>• Ensure results align with patient's clinical presentation</li>
+                        <li>• Ensure results align with patient&apos;s clinical presentation</li>
                       </ul>
                     </div>
 
@@ -358,9 +358,9 @@ export default function OwnerResultDetailPage() {
                     <p className="text-xs text-red-800 mb-2">
                       This result was rejected and returned to the lab for review.
                     </p>
-                    {(result as any).rejectionReason && (
+                    {(result as TestResult & { rejectionReason?: string }).rejectionReason && (
                       <div className="text-xs text-red-700">
-                        <strong>Reason:</strong> {(result as any).rejectionReason}
+                        <strong>Reason:</strong> {(result as TestResult & { rejectionReason?: string }).rejectionReason}
                       </div>
                     )}
                   </div>

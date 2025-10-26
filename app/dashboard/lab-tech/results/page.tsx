@@ -140,8 +140,8 @@ export default function LabResultsPage() {
                         <span className="font-medium">{request.patient?.gender}</span>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-600">Age: </span>
-                        <span className="font-medium">{request.patient?.age}</span>
+                        <span className="text-sm text-gray-600">DOB: </span>
+                        <span className="font-medium">{request.patient?.dateOfBirth?.toLocaleDateString()}</span>
                       </div>
                       <div>
                         <span className="text-sm text-gray-600">Tests: </span>
