@@ -240,15 +240,17 @@ export default function OwnerDashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="text-center py-4">
-              <CheckCircle className="w-10 h-10 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold">Approve Results</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {stats.pendingApprovals} pending
-              </p>
-            </div>
-          </Card>
+          <Link href="/dashboard/owner/results">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="text-center py-4">
+                <CheckCircle className="w-10 h-10 mx-auto mb-2 text-primary" />
+                <h3 className="font-semibold">Approve Results</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {stats.pendingApprovals} pending
+                </p>
+              </div>
+            </Card>
+          </Link>
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <div className="text-center py-4">
