@@ -123,12 +123,12 @@ export default function ReceptionDashboard() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/reception/reports">
+          <Link href="/dashboard/reception/reports/ready">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-indigo-600 text-white">
               <div className="text-center py-6">
                 <FileText className="w-12 h-12 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">Print Reports</h3>
-                <p className="text-sm opacity-90 mt-1">Print patient test reports</p>
+                <h3 className="text-lg font-semibold">Ready Reports</h3>
+                <p className="text-sm opacity-90 mt-1">Print approved patient reports</p>
               </div>
             </Card>
           </Link>
