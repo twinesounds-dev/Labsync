@@ -76,6 +76,25 @@ export interface Patient {
   isExternalReferral: boolean;
   externalRequestForm?: string; // Storage URL
   
+  // Pathway-specific fields
+  // For Pathway 1 (Referred patients)
+  requestFormNumber?: string;
+  requestingPhysician?: string;
+  clinicalDiagnosis?: string;
+  requestedTests?: string;
+  
+  // For Pathway 2 (Inpatients)
+  labRequestForm?: {
+    requestNumber: string;
+    requestDate: Date;
+    clinicalHistory: string;
+    clinicalDiagnosis: string;
+    requestingPhysician: string;
+    selectedTests: string[];
+    urgency: 'Routine' | 'Urgent' | 'STAT';
+    specialInstructions: string;
+  };
+  
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;

@@ -74,20 +74,37 @@ export default function ReceptionDashboard() {
           </Card>
         </div>
 
+        {/* Patient Registration Pathways */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Patient Registration</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <Link href="/dashboard/reception/patients/new?pathway=referred">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
+                <div className="text-center py-6">
+                  <FileText className="w-12 h-12 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold">Pathway 1: Referred Patient</h3>
+                  <p className="text-sm opacity-90 mt-1">Patient with lab request form & clinical notes</p>
+                </div>
+              </Card>
+            </Link>
+            
+            <Link href="/dashboard/reception/patients/new?pathway=inpatient">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
+                <div className="text-center py-6">
+                  <Users className="w-12 h-12 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold">Pathway 2: Inpatient</h3>
+                  <p className="text-sm opacity-90 mt-1">Patient without request form (biodata only)</p>
+                </div>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Link href="/dashboard/reception/patients/new">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
-              <div className="text-center py-6">
-                <Users className="w-12 h-12 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">Register New Patient</h3>
-                <p className="text-sm opacity-90 mt-1">Add new patient to the system</p>
-              </div>
-            </Card>
-          </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 
           <Link href="/dashboard/reception/payments">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-green-600 text-white">
               <div className="text-center py-6">
                 <Receipt className="w-12 h-12 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold">Process Payment</h3>
@@ -97,7 +114,7 @@ export default function ReceptionDashboard() {
           </Link>
 
           <Link href="/dashboard/reception/test-results">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-green-600 text-white">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-blue-600 text-white">
               <div className="text-center py-6">
                 <TestTube className="w-12 h-12 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold">Test Results</h3>

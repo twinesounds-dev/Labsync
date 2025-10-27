@@ -1,351 +1,371 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TestRequest, TestResult } from '@/types';
-import { format } from 'date-fns';
+import { TestRequest, Patient, Test, User } from '@/types';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { 
   Clock, 
   CheckCircle, 
   AlertTriangle, 
-  TestTube, 
-  FileText,
-  User,
+  User as UserIcon,
   Calendar,
-  Zap,
-  Shield,
+  TestTube,
+  FileText,
   Printer,
   Eye
 } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import Link from 'next/link';
+
+interface SampleTrackerProps {
+  patientId?: string;
+  testRequestId?: string;
+  showHeader?: boolean;
+  compact?: boolean;
+}
 
 interface TrackingStep {
   id: string;
   title: string;
   description: string;
-  status: 'completed' | 'current' | 'pending' | 'skipped';
+  status: 'completed' | 'current' | 'pending';
   timestamp?: Date;
-  performedBy?: string;
-  notes?: string;
+  user?: User;
   icon: React.ReactNode;
 }
 
-interface SampleTrackerProps {
-  request: TestRequest;
-  results?: TestResult[];
-  onViewDetails?: () => void;
-}
-
-export default function SampleTracker({ request, results, onViewDetails }: SampleTrackerProps) {
+export default function SampleTracker({ 
+  patientId, 
+  testRequestId, 
+  showHeader = true,
+  compact = false 
+}: SampleTrackerProps) {
+  const [testRequest, setTestRequest] = useState<TestRequest | null>(null);
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [tests, setTests] = useState<Test[]>([]);
+  const [loading, setLoading] = useState(true);
   const [trackingSteps, setTrackingSteps] = useState<TrackingStep[]>([]);
 
   useEffect(() => {
+    if (testRequestId) {
+      loadTestRequest();
+    } else if (patientId) {
+      loadPatientLatestRequest();
+    }
+  }, [testRequestId, patientId]);
+
+  useEffect(() => {
+    if (testRequest) {
+      generateTrackingSteps();
+    }
+  }, [testRequest, patient, tests]);
+
+  const loadTestRequest = async () => {
+    try {
+      setLoading(true);
+      const request = await firestoreService.getById<TestRequest>(
+        COLLECTIONS.TEST_REQUESTS,
+        testRequestId!
+      );
+      
+      if (request) {
+        setTestRequest(request);
+        await loadRelatedData(request);
+      }
+    } catch (error) {
+      console.error('Error loading test request:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPatientLatestRequest = async () => {
+    try {
+      setLoading(true);
+      // This would need a proper query in a real implementation
+      // For now, we'll simulate loading the latest request for a patient
+      const requests = await firestoreService.getAll<TestRequest>(COLLECTIONS.TEST_REQUESTS);
+      const patientRequests = requests.filter(r => r.patientId === patientId);
+      const latestRequest = patientRequests.sort((a, b) => 
+        new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
+      )[0];
+
+      if (latestRequest) {
+        setTestRequest(latestRequest);
+        await loadRelatedData(latestRequest);
+      }
+    } catch (error) {
+      console.error('Error loading patient requests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadRelatedData = async (request: TestRequest) => {
+    try {
+      // Load patient data
+      if (request.patientId) {
+        const patientData = await firestoreService.getById<Patient>(
+          COLLECTIONS.PATIENTS,
+          request.patientId
+        );
+        setPatient(patientData);
+      }
+
+      // Load test details
+      if (request.tests) {
+        const testDetails = [];
+        for (const testItem of request.tests) {
+          const test = await firestoreService.getById<Test>(
+            COLLECTIONS.TESTS,
+            testItem.testId
+          );
+          if (test) {
+            testDetails.push(test);
+          }
+        }
+        setTests(testDetails);
+      }
+    } catch (error) {
+      console.error('Error loading related data:', error);
+    }
+  };
+
+  const generateTrackingSteps = () => {
+    if (!testRequest) return;
+
     const steps: TrackingStep[] = [
       {
         id: 'registration',
         title: 'Patient Registration',
-        description: 'Patient registered and tests selected',
+        description: patient?.isExternalReferral 
+          ? 'Patient registered with lab request form'
+          : 'Inpatient registered and lab request generated',
         status: 'completed',
-        timestamp: request.requestDate,
-        performedBy: request.requestedBy,
-        icon: <User className="w-5 h-5" />
+        timestamp: new Date(testRequest.requestDate),
+        icon: <UserIcon className="w-5 h-5" />,
+      },
+      {
+        id: 'test-selection',
+        title: 'Test Selection & Billing',
+        description: `${testRequest.tests?.length || 0} tests selected and billed`,
+        status: 'completed',
+        timestamp: new Date(testRequest.requestDate),
+        icon: <FileText className="w-5 h-5" />,
       },
       {
         id: 'payment',
         title: 'Payment Confirmation',
-        description: 'Payment processed and confirmed',
-        status: request.paymentStatus === 'Paid' ? 'completed' : 'pending',
-        timestamp: request.paymentStatus === 'Paid' ? request.requestDate : undefined,
-        icon: <CheckCircle className="w-5 h-5" />
+        description: `Payment ${testRequest.paymentStatus.toLowerCase()}`,
+        status: testRequest.paymentStatus === 'Paid' ? 'completed' : 
+               testRequest.paymentStatus === 'Partial' ? 'current' : 'pending',
+        icon: <CheckCircle className="w-5 h-5" />,
       },
       {
-        id: 'sample_collection',
+        id: 'sample-collection',
         title: 'Sample Collection',
-        description: 'Samples collected and quality checked',
-        status: request.sampleReceivedDate ? 'completed' : 
-                request.paymentStatus === 'Paid' ? 'current' : 'pending',
-        timestamp: request.sampleReceivedDate,
-        performedBy: request.sampleReceivedBy,
-        notes: request.sampleQualityNotes,
-        icon: <TestTube className="w-5 h-5" />
+        description: testRequest.sampleCollectionDate 
+          ? 'Sample collected and quality checked'
+          : 'Awaiting sample collection',
+        status: testRequest.sampleCollectionDate ? 'completed' : 
+               testRequest.paymentStatus === 'Paid' ? 'current' : 'pending',
+        timestamp: testRequest.sampleCollectionDate ? new Date(testRequest.sampleCollectionDate) : undefined,
+        icon: <TestTube className="w-5 h-5" />,
       },
       {
-        id: 'lab_analysis',
-        title: 'Laboratory Analysis',
-        description: 'Tests performed and results generated',
-        status: results && results.length > 0 ? 'completed' : 
-                request.sampleReceivedDate ? 'current' : 'pending',
-        timestamp: results?.[0]?.datePerformed,
-        performedBy: results?.[0]?.performedBy,
-        notes: results?.[0]?.remarks,
-        icon: <Shield className="w-5 h-5" />
+        id: 'lab-processing',
+        title: 'Laboratory Processing',
+        description: testRequest.overallStatus === 'InProgress' 
+          ? 'Tests in progress'
+          : testRequest.overallStatus === 'Completed'
+          ? 'Tests completed'
+          : 'Awaiting laboratory processing',
+        status: testRequest.overallStatus === 'Completed' ? 'completed' :
+               testRequest.overallStatus === 'InProgress' ? 'current' :
+               testRequest.overallStatus === 'SampleReceived' ? 'current' : 'pending',
+        icon: <AlertTriangle className="w-5 h-5" />,
       },
       {
-        id: 'quality_review',
-        title: 'Quality Review',
-        description: 'Results reviewed and approved',
-        status: results?.every(r => r.status === 'Approved') ? 'completed' :
-                results?.some(r => r.status === 'Submitted') ? 'current' : 'pending',
-        timestamp: results?.find(r => r.status === 'Approved')?.dateApproved,
-        performedBy: results?.find(r => r.status === 'Approved')?.approvedBy,
-        icon: <Eye className="w-5 h-5" />
+        id: 'results-approval',
+        title: 'Results Approval',
+        description: testRequest.overallStatus === 'Approved' 
+          ? 'Results reviewed and approved'
+          : 'Awaiting results approval',
+        status: testRequest.overallStatus === 'Approved' ? 'completed' :
+               testRequest.overallStatus === 'Completed' ? 'current' : 'pending',
+        icon: <CheckCircle className="w-5 h-5" />,
       },
       {
-        id: 'report_generation',
-        title: 'Report Generation',
-        description: 'Final report prepared for delivery',
-        status: results?.every(r => r.status === 'Approved') ? 'completed' : 'pending',
-        timestamp: results?.every(r => r.status === 'Approved') ? new Date() : undefined,
-        icon: <FileText className="w-5 h-5" />
+        id: 'report-generation',
+        title: 'Report Ready',
+        description: testRequest.overallStatus === 'Approved' 
+          ? 'Report ready for collection'
+          : 'Report generation pending',
+        status: testRequest.overallStatus === 'Approved' ? 'completed' : 'pending',
+        icon: <Printer className="w-5 h-5" />,
       },
-      {
-        id: 'report_delivery',
-        title: 'Report Delivery',
-        description: 'Report printed and delivered to patient',
-        status: results?.some(r => r.status === 'Printed') ? 'completed' : 'pending',
-        timestamp: results?.find(r => r.status === 'Printed')?.updatedAt,
-        icon: <Printer className="w-5 h-5" />
-      }
     ];
 
     setTrackingSteps(steps);
-  }, [request, results]);
+  };
+
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'text-green-600 bg-green-100';
-      case 'current': return 'text-blue-600 bg-blue-100';
-      case 'pending': return 'text-gray-400 bg-gray-100';
-      case 'skipped': return 'text-orange-600 bg-orange-100';
-      default: return 'text-gray-400 bg-gray-100';
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'current':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending':
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-600 border-gray-200';
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStepIconColor = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'current': return <Clock className="w-4 h-4 text-blue-600 animate-pulse" />;
-      case 'pending': return <Clock className="w-4 h-4 text-gray-400" />;
-      case 'skipped': return <AlertTriangle className="w-4 h-4 text-orange-600" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
+      case 'completed':
+        return 'bg-green-500 text-white';
+      case 'current':
+        return 'bg-blue-500 text-white';
+      case 'pending':
+        return 'bg-gray-300 text-gray-600';
+      default:
+        return 'bg-gray-300 text-gray-600';
     }
   };
 
-  const getCurrentStep = () => {
-    return trackingSteps.find(step => step.status === 'current');
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="text-gray-500">Loading tracking information...</div>
+      </div>
+    );
+  }
 
-  const getCompletionPercentage = () => {
-    const completed = trackingSteps.filter(step => step.status === 'completed').length;
-    return Math.round((completed / trackingSteps.length) * 100);
-  };
-
-  const getEstimatedCompletion = () => {
-    const currentStep = getCurrentStep();
-    if (!currentStep) return 'Completed';
-
-    const estimatedTimes = {
-      'payment': '5 minutes',
-      'sample_collection': '15 minutes',
-      'lab_analysis': '2-4 hours',
-      'quality_review': '30 minutes',
-      'report_generation': '5 minutes',
-      'report_delivery': 'Ready for pickup'
-    };
-
-    return estimatedTimes[currentStep.id as keyof typeof estimatedTimes] || 'Processing';
-  };
+  if (!testRequest || !patient) {
+    return (
+      <div className="text-center py-8">
+        <TestTube className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-500">No tracking information available</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Patient Info */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              Sample Tracking: {request.patient?.surname} {request.patient?.givenName}
-            </h2>
-            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-              <div className="flex items-center space-x-1">
-                <User className="w-4 h-4" />
-                <span>ID: {request.patient?.patientId}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>Requested: {format(request.requestDate, 'dd MMM yyyy, HH:mm')}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <TestTube className="w-4 h-4" />
-                <span>{request.tests.length} test(s)</span>
-              </div>
-              {request.patient?.urgency === 'STAT' && (
-                <div className="flex items-center space-x-1">
-                  <Zap className="w-4 h-4 text-red-500" />
-                  <span className="text-red-600 font-medium">STAT Priority</span>
-                </div>
-              )}
+    <div className={`bg-white ${compact ? 'p-4' : 'p-6'} rounded-lg border`}>
+      {showHeader && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Sample Tracking</h3>
+              <p className="text-sm text-gray-600">
+                Patient: {patient.surname}, {patient.givenName} ({patient.patientId})
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <Link href={`/dashboard/reception/tracking/${patient.id}`}>
+                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  <Eye className="w-4 h-4 inline mr-1" />
+                  View Details
+                </button>
+              </Link>
             </div>
           </div>
-          
-          <div className="text-right">
-            <div className="text-2xl font-bold text-blue-600">{getCompletionPercentage()}%</div>
-            <div className="text-sm text-gray-600">Complete</div>
-            {onViewDetails && (
-              <Button
-                size="sm"
-                onClick={onViewDetails}
-                className="mt-2"
-              >
-                View Details
-              </Button>
-            )}
-          </div>
         </div>
+      )}
 
-        {/* Progress Bar */}
-        <div className="mt-4">
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>Progress</span>
-            <span>ETA: {getEstimatedCompletion()}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${getCompletionPercentage()}%` }}
-            ></div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Tracking Steps */}
-      <Card title="Tracking Timeline">
-        <div className="space-y-6">
-          {trackingSteps.map((step, index) => (
-            <div key={step.id} className="relative">
-              {/* Connector Line */}
+      {/* Progress Steps */}
+      <div className="space-y-4">
+        {trackingSteps.map((step, index) => (
+          <div key={step.id} className="flex items-start space-x-4">
+            {/* Step Icon */}
+            <div className="flex-shrink-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStepIconColor(step.status)}`}>
+                {step.icon}
+              </div>
               {index < trackingSteps.length - 1 && (
-                <div className="absolute left-6 top-12 w-0.5 h-16 bg-gray-200"></div>
+                <div className={`w-0.5 h-8 mt-2 mx-auto ${
+                  step.status === 'completed' ? 'bg-green-300' : 'bg-gray-200'
+                }`} />
               )}
-              
-              <div className="flex items-start space-x-4">
-                {/* Step Icon */}
-                <div className={`
-                  flex items-center justify-center w-12 h-12 rounded-full border-2 
-                  ${step.status === 'completed' ? 'border-green-300 bg-green-50' :
-                    step.status === 'current' ? 'border-blue-300 bg-blue-50' :
-                    'border-gray-300 bg-gray-50'}
-                `}>
-                  <div className={
-                    step.status === 'completed' ? 'text-green-600' :
-                    step.status === 'current' ? 'text-blue-600' :
-                    'text-gray-400'
-                  }>
-                    {step.icon}
-                  </div>
-                </div>
-
-                {/* Step Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className={`font-semibold ${
-                      step.status === 'completed' ? 'text-green-900' :
-                      step.status === 'current' ? 'text-blue-900' :
-                      'text-gray-500'
-                    }`}>
-                      {step.title}
-                    </h3>
-                    
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(step.status)}
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(step.status)}`}>
-                        {step.status === 'current' ? 'In Progress' : 
-                         step.status === 'completed' ? 'Completed' : 
-                         step.status === 'pending' ? 'Pending' : 'Skipped'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mt-1">{step.description}</p>
-                  
-                  {/* Step Details */}
-                  {(step.timestamp || step.performedBy || step.notes) && (
-                    <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-600">
-                        {step.timestamp && (
-                          <div>
-                            <span className="font-medium">Time:</span>
-                            <div>{format(step.timestamp, 'dd MMM yyyy, HH:mm')}</div>
-                          </div>
-                        )}
-                        {step.performedBy && (
-                          <div>
-                            <span className="font-medium">Performed by:</span>
-                            <div>{step.performedBy}</div>
-                          </div>
-                        )}
-                        {step.notes && (
-                          <div className="md:col-span-1">
-                            <span className="font-medium">Notes:</span>
-                            <div>{step.notes}</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
-          ))}
-        </div>
-      </Card>
 
-      {/* Test Details */}
-      <Card title="Test Information">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {request.tests.map((test, index) => {
-            const testResult = results?.find(r => r.testId === test.testId);
-            return (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{test.test?.name}</h4>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    testResult?.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                    testResult?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
-                    test.status === 'Completed' ? 'bg-orange-100 text-orange-800' :
-                    test.status === 'InProgress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
+            {/* Step Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className={`text-sm font-medium ${
+                    step.status === 'completed' ? 'text-green-900' :
+                    step.status === 'current' ? 'text-blue-900' :
+                    'text-gray-600'
                   }`}>
-                    {testResult?.status || test.status}
+                    {step.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">{step.description}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(step.status)}`}>
+                    {step.status === 'completed' ? 'Completed' :
+                     step.status === 'current' ? 'In Progress' :
+                     'Pending'}
                   </span>
                 </div>
-                
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>Code: {test.test?.code}</div>
-                  <div>Sample: {test.test?.sampleType}</div>
-                  <div>Price: UGX {test.price.toLocaleString()}</div>
-                  {testResult?.datePerformed && (
-                    <div>Performed: {format(testResult.datePerformed, 'dd MMM HH:mm')}</div>
-                  )}
-                </div>
               </div>
-            );
-          })}
-        </div>
-      </Card>
+              {step.timestamp && (
+                <div className="flex items-center mt-2 text-xs text-gray-500">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {formatDate(step.timestamp)}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* Current Status Alert */}
-      {getCurrentStep() && (
-        <Card className="border-blue-200 bg-blue-50">
-          <div className="flex items-center space-x-3">
-            <Clock className="w-5 h-5 text-blue-600 animate-pulse" />
+      {/* Summary Information */}
+      {!compact && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <h4 className="font-semibold text-blue-900">Current Status</h4>
-              <p className="text-blue-800 text-sm">
-                {getCurrentStep()?.description} - Estimated completion: {getEstimatedCompletion()}
+              <span className="font-medium text-gray-700">Request Date:</span>
+              <p className="text-gray-600">{formatDate(testRequest.requestDate)}</p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700">Tests Requested:</span>
+              <p className="text-gray-600">{tests.length} tests</p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700">Current Status:</span>
+              <p className={`font-medium ${
+                testRequest.overallStatus === 'Approved' ? 'text-green-600' :
+                testRequest.overallStatus === 'Completed' ? 'text-blue-600' :
+                testRequest.overallStatus === 'InProgress' ? 'text-purple-600' :
+                testRequest.overallStatus === 'SampleReceived' ? 'text-orange-600' :
+                'text-gray-600'
+              }`}>
+                {testRequest.overallStatus}
               </p>
             </div>
           </div>
-        </Card>
+
+          {tests.length > 0 && (
+            <div className="mt-4">
+              <span className="font-medium text-gray-700 text-sm">Tests:</span>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tests.map((test, index) => (
+                  <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                    {test.name} ({test.code})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
