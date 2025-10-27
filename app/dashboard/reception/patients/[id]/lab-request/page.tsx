@@ -48,42 +48,46 @@ export default function LabRequestPage() {
   });
 
   useEffect(() => {
-    loadPatient();
-    generateRequestNumber();
-  }, [params.id]);
-
-  const loadPatient = async () => {
-    try {
-      setLoading(true);
-      const patientData = await firestoreService.getById<Patient>(
-        COLLECTIONS.PATIENTS,
-        params.id as string
-      );
-      if (patientData) {
-        setPatient(patientData);
+    const loadPatient = async () => {
+      try {
+        setLoading(true);
+        const patientData = await firestoreService.getById<Patient>(
+          COLLECTIONS.PATIENTS,
+          params.id as string
+        );
+        if (patientData) {
+          setPatient(patientData);
+        }
+      } catch {
+        setError('Failed to load patient data');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError('Failed to load patient data');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const generateRequestNumber = async () => {
-    try {
-      if (!userProfile?.facilityId) return;
-      
-      const facility = await firestoreService.getById('facilities', userProfile.facilityId);
-      if (facility) {
-        const facilityCode = (facility as { code: string }).code;
-        const timestamp = Date.now().toString().slice(-6);
-        const requestNumber = `${facilityCode}-REQ-${timestamp}`;
-        setFormData(prev => ({ ...prev, requestNumber }));
+    const generateRequestNumber = async () => {
+      try {
+        if (!userProfile?.facilityId) return;
+        
+        const facility = await firestoreService.getById('facilities', userProfile.facilityId);
+        if (facility) {
+          const facilityCode = (facility as { code: string }).code;
+          const timestamp = Date.now().toString().slice(-6);
+          const requestNumber = `${facilityCode}-REQ-${timestamp}`;
+          setFormData(prev => ({ ...prev, requestNumber }));
+        }
+      } catch (error) {
+        console.error('Failed to generate request number:', error);
       }
-    } catch (err) {
-      console.error('Failed to generate request number:', err);
-    }
-  };
+    };
+
+    const loadData = async () => {
+      await loadPatient();
+      await generateRequestNumber();
+    };
+    
+    loadData();
+  }, [params.id, userProfile?.facilityId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -114,7 +118,7 @@ export default function LabRequestPage() {
 
       // Show success message
       alert('Lab request form saved successfully!');
-    } catch (err) {
+    } catch {
       setError('Failed to save lab request form');
     } finally {
       setSaving(false);

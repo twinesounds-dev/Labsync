@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-interface SampleWithDetails extends TestRequest {
+interface SampleWithDetails extends Omit<TestRequest, 'tests'> {
   patient?: Patient;
   tests?: Test[];
 }
@@ -73,9 +73,10 @@ export default function SampleTrackingPage() {
         }
 
         // Load test details
-        if (requestData.tests) {
+        const originalTests = (requestData as unknown as TestRequest).tests;
+        if (originalTests) {
           const testDetails = [];
-          for (const testItem of requestData.tests) {
+          for (const testItem of originalTests) {
             try {
               const test = await firestoreService.getById<Test>(
                 COLLECTIONS.TESTS,

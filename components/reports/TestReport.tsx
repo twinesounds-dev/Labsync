@@ -1,7 +1,6 @@
 'use client';
 
 import { TestResult, Patient, Test, Facility, User } from '@/types';
-import { format } from 'date-fns';
 
 interface TestReportProps {
   testResult: TestResult;
@@ -25,11 +24,12 @@ export default function TestReport({
   showFooter = true,
 }: TestReportProps) {
   const formatDate = (date: Date | string) => {
-    return format(new Date(date), 'dd/MM/yyyy');
+    return new Date(date).toLocaleDateString('en-GB');
   };
 
   const formatDateTime = (date: Date | string) => {
-    return format(new Date(date), 'dd/MM/yyyy HH:mm');
+    const d = new Date(date);
+    return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const getAgeFromDOB = (dob: Date | string) => {

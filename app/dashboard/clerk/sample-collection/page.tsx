@@ -11,9 +11,6 @@ import { TestRequest, Patient, Test } from '@/types';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { 
   TestTube, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
   Search, 
   User,
   Calendar,
@@ -36,7 +33,7 @@ interface SampleCollectionData {
   storageConditions: string;
 }
 
-interface PendingSample extends TestRequest {
+interface PendingSample extends Omit<TestRequest, 'tests'> {
   patient?: Patient;
   tests?: Test[];
 }
@@ -94,9 +91,10 @@ export default function SampleCollectionPage() {
         }
 
         // Load test details
-        if (requestData.tests) {
+        const originalTests = (requestData as unknown as TestRequest).tests;
+        if (originalTests) {
           const testDetails = [];
-          for (const testItem of requestData.tests) {
+          for (const testItem of originalTests) {
             try {
               const test = await firestoreService.getById<Test>(
                 COLLECTIONS.TESTS,

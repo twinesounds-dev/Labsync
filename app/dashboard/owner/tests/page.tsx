@@ -9,7 +9,6 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { Test, TestCategory } from '@/types';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
-import { TEST_CATEGORIES } from '@/lib/constants';
 import { 
   TestTube, 
   Plus, 

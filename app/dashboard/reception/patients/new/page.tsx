@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -14,7 +14,7 @@ import { UGANDA_DISTRICTS } from '@/lib/constants';
 import { ArrowLeft, FileText, Users } from 'lucide-react';
 import Link from 'next/link';
 
-export default function NewPatientPage() {
+function NewPatientPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userProfile } = useAuth();
@@ -146,16 +146,16 @@ export default function NewPatientPage() {
       // Add pathway-specific fields for referred patients
       if (pathway === 'referred') {
         if (formData.requestFormNumber?.trim()) {
-          (patientData as any).requestFormNumber = formData.requestFormNumber.trim();
+          (patientData as Partial<Patient> & { requestFormNumber?: string }).requestFormNumber = formData.requestFormNumber.trim();
         }
         if (formData.requestingPhysician?.trim()) {
-          (patientData as any).requestingPhysician = formData.requestingPhysician.trim();
+          (patientData as Partial<Patient> & { requestingPhysician?: string }).requestingPhysician = formData.requestingPhysician.trim();
         }
         if (formData.clinicalDiagnosis?.trim()) {
-          (patientData as any).clinicalDiagnosis = formData.clinicalDiagnosis.trim();
+          (patientData as Partial<Patient> & { clinicalDiagnosis?: string }).clinicalDiagnosis = formData.clinicalDiagnosis.trim();
         }
         if (formData.requestedTests?.trim()) {
-          (patientData as any).requestedTests = formData.requestedTests.trim();
+          (patientData as Partial<Patient> & { requestedTests?: string }).requestedTests = formData.requestedTests.trim();
         }
       }
 
@@ -501,5 +501,13 @@ export default function NewPatientPage() {
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function NewPatientPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NewPatientPageContent />
+    </Suspense>
   );
 }

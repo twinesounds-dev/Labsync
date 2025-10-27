@@ -199,19 +199,23 @@ export default function TestReportPage() {
 
         {/* Content */}
         {view === 'report' ? (
-          <TestReport
-            result={result}
-            request={request}
-            patient={request.patient!}
-            facility={facility || undefined}
-            onPrint={handlePrint}
-            onDownload={handleDownload}
-          />
+          facility && result && request?.patient ? (
+            <TestReport
+              testResult={result}
+              patient={request.patient}
+              test={result.test!}
+              facility={facility}
+              performedBy={result.performedByUser}
+              approvedBy={result.approvedByUser}
+            />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Loading report data...</p>
+            </div>
+          )
         ) : (
           <SampleTracker
-            request={request}
-            results={[result]}
-            onViewDetails={() => setView('report')}
+            testRequestId={request?.id}
           />
         )}
 

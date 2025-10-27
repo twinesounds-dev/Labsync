@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { TestRequest, Patient, Test, User } from '@/types';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { 
-  Clock, 
   CheckCircle, 
   AlertTriangle, 
   User as UserIcon,
@@ -46,59 +45,144 @@ export default function SampleTracker({
   const [trackingSteps, setTrackingSteps] = useState<TrackingStep[]>([]);
 
   useEffect(() => {
-    if (testRequestId) {
-      loadTestRequest();
-    } else if (patientId) {
-      loadPatientLatestRequest();
-    }
+    const loadTestRequest = async () => {
+      try {
+        setLoading(true);
+        const request = await firestoreService.getById<TestRequest>(
+          COLLECTIONS.TEST_REQUESTS,
+          testRequestId!
+        );
+        
+        if (request) {
+          setTestRequest(request);
+          await loadRelatedData(request);
+        }
+      } catch (error) {
+        console.error('Error loading test request:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const loadPatientLatestRequest = async () => {
+      try {
+        setLoading(true);
+        // This would need a proper query in a real implementation
+        // For now, we'll simulate loading the latest request for a patient
+        const requests = await firestoreService.getAll<TestRequest>(COLLECTIONS.TEST_REQUESTS);
+        const patientRequests = requests.filter(r => r.patientId === patientId);
+        const latestRequest = patientRequests.sort((a, b) => 
+          new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
+        )[0];
+
+        if (latestRequest) {
+          setTestRequest(latestRequest);
+          await loadRelatedData(latestRequest);
+        }
+      } catch (error) {
+        console.error('Error loading patient requests:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const loadData = async () => {
+      if (testRequestId) {
+        await loadTestRequest();
+      } else if (patientId) {
+        await loadPatientLatestRequest();
+      }
+    };
+    loadData();
   }, [testRequestId, patientId]);
 
   useEffect(() => {
-    if (testRequest) {
-      generateTrackingSteps();
-    }
+    const generateTrackingSteps = () => {
+      if (!testRequest) return;
+
+      const steps: TrackingStep[] = [
+        {
+          id: 'registration',
+          title: 'Patient Registration',
+          description: patient?.isExternalReferral 
+            ? 'Patient registered with lab request form'
+            : 'Inpatient registered and lab request generated',
+          status: 'completed',
+          timestamp: new Date(testRequest.requestDate),
+          icon: <UserIcon className="w-5 h-5" />,
+        },
+        {
+          id: 'test-selection',
+          title: 'Test Selection & Billing',
+          description: `${testRequest.tests?.length || 0} tests selected and billed`,
+          status: 'completed',
+          timestamp: new Date(testRequest.requestDate),
+          icon: <FileText className="w-5 h-5" />,
+        },
+        {
+          id: 'payment',
+          title: 'Payment Confirmation',
+          description: `Payment ${testRequest.paymentStatus.toLowerCase()}`,
+          status: testRequest.paymentStatus === 'Paid' ? 'completed' : 
+                 testRequest.paymentStatus === 'Partial' ? 'current' : 'pending',
+          icon: <CheckCircle className="w-5 h-5" />,
+        },
+        {
+          id: 'sample-collection',
+          title: 'Sample Collection',
+          description: testRequest.sampleCollectionDate 
+            ? 'Sample collected and quality checked'
+            : 'Awaiting sample collection',
+          status: testRequest.sampleCollectionDate ? 'completed' : 
+                 testRequest.paymentStatus === 'Paid' ? 'current' : 'pending',
+          timestamp: testRequest.sampleCollectionDate ? new Date(testRequest.sampleCollectionDate) : undefined,
+          icon: <TestTube className="w-5 h-5" />,
+        },
+        {
+          id: 'lab-processing',
+          title: 'Laboratory Processing',
+          description: testRequest.overallStatus === 'InProgress' 
+            ? 'Tests in progress'
+            : testRequest.overallStatus === 'Completed'
+            ? 'Tests completed'
+            : 'Awaiting laboratory processing',
+          status: testRequest.overallStatus === 'Completed' ? 'completed' :
+                 testRequest.overallStatus === 'InProgress' ? 'current' :
+                 testRequest.overallStatus === 'SampleReceived' ? 'current' : 'pending',
+          icon: <AlertTriangle className="w-5 h-5" />,
+        },
+        {
+          id: 'results-approval',
+          title: 'Results Approval',
+          description: testRequest.overallStatus === 'Approved' 
+            ? 'Results reviewed and approved'
+            : 'Awaiting results approval',
+          status: testRequest.overallStatus === 'Approved' ? 'completed' :
+                 testRequest.overallStatus === 'Completed' ? 'current' : 'pending',
+          icon: <CheckCircle className="w-5 h-5" />,
+        },
+        {
+          id: 'report-generation',
+          title: 'Report Ready',
+          description: testRequest.overallStatus === 'Approved' 
+            ? 'Report ready for collection'
+            : 'Report generation pending',
+          status: testRequest.overallStatus === 'Approved' ? 'completed' : 'pending',
+          icon: <Printer className="w-5 h-5" />,
+        },
+      ];
+
+      setTrackingSteps(steps);
+    };
+
+    const generateSteps = () => {
+      if (testRequest) {
+        generateTrackingSteps();
+      }
+    };
+    generateSteps();
   }, [testRequest, patient, tests]);
 
-  const loadTestRequest = async () => {
-    try {
-      setLoading(true);
-      const request = await firestoreService.getById<TestRequest>(
-        COLLECTIONS.TEST_REQUESTS,
-        testRequestId!
-      );
-      
-      if (request) {
-        setTestRequest(request);
-        await loadRelatedData(request);
-      }
-    } catch (error) {
-      console.error('Error loading test request:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadPatientLatestRequest = async () => {
-    try {
-      setLoading(true);
-      // This would need a proper query in a real implementation
-      // For now, we'll simulate loading the latest request for a patient
-      const requests = await firestoreService.getAll<TestRequest>(COLLECTIONS.TEST_REQUESTS);
-      const patientRequests = requests.filter(r => r.patientId === patientId);
-      const latestRequest = patientRequests.sort((a, b) => 
-        new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
-      )[0];
-
-      if (latestRequest) {
-        setTestRequest(latestRequest);
-        await loadRelatedData(latestRequest);
-      }
-    } catch (error) {
-      console.error('Error loading patient requests:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadRelatedData = async (request: TestRequest) => {
     try {
@@ -130,83 +214,6 @@ export default function SampleTracker({
     }
   };
 
-  const generateTrackingSteps = () => {
-    if (!testRequest) return;
-
-    const steps: TrackingStep[] = [
-      {
-        id: 'registration',
-        title: 'Patient Registration',
-        description: patient?.isExternalReferral 
-          ? 'Patient registered with lab request form'
-          : 'Inpatient registered and lab request generated',
-        status: 'completed',
-        timestamp: new Date(testRequest.requestDate),
-        icon: <UserIcon className="w-5 h-5" />,
-      },
-      {
-        id: 'test-selection',
-        title: 'Test Selection & Billing',
-        description: `${testRequest.tests?.length || 0} tests selected and billed`,
-        status: 'completed',
-        timestamp: new Date(testRequest.requestDate),
-        icon: <FileText className="w-5 h-5" />,
-      },
-      {
-        id: 'payment',
-        title: 'Payment Confirmation',
-        description: `Payment ${testRequest.paymentStatus.toLowerCase()}`,
-        status: testRequest.paymentStatus === 'Paid' ? 'completed' : 
-               testRequest.paymentStatus === 'Partial' ? 'current' : 'pending',
-        icon: <CheckCircle className="w-5 h-5" />,
-      },
-      {
-        id: 'sample-collection',
-        title: 'Sample Collection',
-        description: testRequest.sampleCollectionDate 
-          ? 'Sample collected and quality checked'
-          : 'Awaiting sample collection',
-        status: testRequest.sampleCollectionDate ? 'completed' : 
-               testRequest.paymentStatus === 'Paid' ? 'current' : 'pending',
-        timestamp: testRequest.sampleCollectionDate ? new Date(testRequest.sampleCollectionDate) : undefined,
-        icon: <TestTube className="w-5 h-5" />,
-      },
-      {
-        id: 'lab-processing',
-        title: 'Laboratory Processing',
-        description: testRequest.overallStatus === 'InProgress' 
-          ? 'Tests in progress'
-          : testRequest.overallStatus === 'Completed'
-          ? 'Tests completed'
-          : 'Awaiting laboratory processing',
-        status: testRequest.overallStatus === 'Completed' ? 'completed' :
-               testRequest.overallStatus === 'InProgress' ? 'current' :
-               testRequest.overallStatus === 'SampleReceived' ? 'current' : 'pending',
-        icon: <AlertTriangle className="w-5 h-5" />,
-      },
-      {
-        id: 'results-approval',
-        title: 'Results Approval',
-        description: testRequest.overallStatus === 'Approved' 
-          ? 'Results reviewed and approved'
-          : 'Awaiting results approval',
-        status: testRequest.overallStatus === 'Approved' ? 'completed' :
-               testRequest.overallStatus === 'Completed' ? 'current' : 'pending',
-        icon: <CheckCircle className="w-5 h-5" />,
-      },
-      {
-        id: 'report-generation',
-        title: 'Report Ready',
-        description: testRequest.overallStatus === 'Approved' 
-          ? 'Report ready for collection'
-          : 'Report generation pending',
-        status: testRequest.overallStatus === 'Approved' ? 'completed' : 'pending',
-        icon: <Printer className="w-5 h-5" />,
-      },
-    ];
-
-    setTrackingSteps(steps);
-  };
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
