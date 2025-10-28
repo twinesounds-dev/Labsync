@@ -30,6 +30,7 @@ export default function ApprovalsPage() {
   const [processing, setProcessing] = useState(false);
   const [facility, setFacility] = useState<Facility | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     if (!userProfile?.facilityId) {
@@ -49,24 +50,48 @@ export default function ApprovalsPage() {
 
     loadFacility();
 
-    // Subscribe to submitted test results for this facility
-    const resultsQuery = query(
-      collection(db, COLLECTIONS.TEST_RESULTS),
-      where('facilityId', '==', userProfile.facilityId),
-      where('status', '==', 'Submitted')
-    );
+    // Subscribe to submitted test results 
+    // For owners, we might need to show all facilities or just their facility
+    // Let's check user role and adjust accordingly
+    const isOwner = userProfile.role === 'owner';
+    
+    const resultsQuery = debugMode || isOwner
+      ? query(
+          collection(db, COLLECTIONS.TEST_RESULTS),
+          where('status', '==', 'Submitted')
+        )
+      : query(
+          collection(db, COLLECTIONS.TEST_RESULTS),
+          where('facilityId', '==', userProfile.facilityId),
+          where('status', '==', 'Submitted')
+        );
+
+    console.log('Setting up approvals query for facility:', userProfile.facilityId);
 
     const unsubscribe = onSnapshot(resultsQuery, async (snapshot) => {
+      console.log('Approvals query snapshot received:', snapshot.size, 'documents');
       const resultsData: ExtendedTestResult[] = [];
 
+      if (snapshot.empty) {
+        console.log('No documents found in query. Checking if any test results exist...');
+        setTestResults([]);
+        setLoading(false);
+        return;
+      }
+
       for (const doc of snapshot.docs) {
+        console.log('Processing result document:', doc.id, doc.data());
+        const docData = doc.data();
+        
         const resultData = {
           id: doc.id,
-          ...doc.data(),
-          datePerformed: doc.data().datePerformed?.toDate() || new Date(),
-          dateSubmitted: doc.data().dateSubmitted?.toDate() || new Date(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          ...docData,
+          datePerformed: docData.datePerformed?.toDate() || new Date(),
+          dateSubmitted: docData.dateSubmitted?.toDate() || new Date(),
+          dateApproved: docData.dateApproved?.toDate(),
+          printedDate: docData.printedDate?.toDate(),
+          createdAt: docData.createdAt?.toDate() || new Date(),
+          updatedAt: docData.updatedAt?.toDate() || new Date(),
         } as ExtendedTestResult;
 
         // Load patient data
@@ -112,12 +137,30 @@ export default function ApprovalsPage() {
         resultsData.push(resultData);
       }
 
+      console.log('Final results data:', resultsData.length, 'results loaded');
       setTestResults(resultsData);
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [userProfile?.facilityId]);
+    // Also check for all submitted results (for debugging)
+    const allResultsQuery = query(
+      collection(db, COLLECTIONS.TEST_RESULTS),
+      where('status', '==', 'Submitted')
+    );
+
+    const debugUnsubscribe = onSnapshot(allResultsQuery, (snapshot) => {
+      console.log('DEBUG: All submitted results across all facilities:', snapshot.size);
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        console.log('DEBUG: Result', doc.id, 'facilityId:', data.facilityId, 'status:', data.status);
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      debugUnsubscribe();
+    };
+  }, [userProfile?.facilityId, userProfile?.role, debugMode]);
 
   const handleApprove = async (resultId: string) => {
     if (!userProfile) return;
@@ -239,6 +282,50 @@ export default function ApprovalsPage() {
           <p className="text-gray-600 mt-1">
             Review and approve test results before releasing to patients
           </p>
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Role: {userProfile?.role} | Facility ID: {userProfile?.facilityId} | Results loaded: {testResults.length}
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDebugMode(!debugMode)}
+                className="text-xs"
+              >
+                {debugMode ? 'Show Facility Only' : 'Debug: Show All'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="text-xs"
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/seed-test-results', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                      alert('Test results seeded successfully!');
+                      window.location.reload();
+                    } else {
+                      alert('Failed to seed test results: ' + result.error);
+                    }
+                  } catch {
+                    alert('Failed to seed test results');
+                  }
+                }}
+                className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              >
+                Seed Test Data
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Search */}
@@ -453,11 +540,23 @@ export default function ApprovalsPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   No pending approvals
                 </h3>
-                <p className="text-gray-600">
-                  {searchTerm
-                    ? 'Try a different search term'
-                    : 'All test results have been reviewed!'}
-                </p>
+                <div className="text-gray-600 space-y-2">
+                  {searchTerm ? (
+                    <p>Try a different search term</p>
+                  ) : (
+                    <div>
+                      <p>No test results are pending approval for this facility.</p>
+                      <div className="text-sm text-gray-500 mt-4 space-y-1">
+                        <p>• Check that lab technicians have submitted results</p>
+                        <p>• Verify that results are marked as &quot;Submitted&quot; status</p>
+                        <p>• Ensure results belong to facility: {userProfile?.facilityId}</p>
+                        {debugMode && (
+                          <p className="text-blue-600">• Debug mode: Showing all facilities</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
