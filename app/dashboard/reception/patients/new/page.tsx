@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
@@ -11,14 +11,16 @@ import Select from '@/components/ui/Select';
 import { Patient } from '@/types';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { UGANDA_DISTRICTS } from '@/lib/constants';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText, Users } from 'lucide-react';
 import Link from 'next/link';
 
-export default function NewPatientPage() {
+function NewPatientPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pathway, setPathway] = useState<'referred' | 'inpatient'>('referred');
   
   const [formData, setFormData] = useState({
     surname: '',
@@ -42,7 +44,19 @@ export default function NewPatientPage() {
     insuranceProvider: '',
     insuranceNumber: '',
     corporateClient: '',
+    // New fields for referred patients
+    requestFormNumber: '',
+    requestingPhysician: '',
+    clinicalDiagnosis: '',
+    requestedTests: '',
   });
+
+  useEffect(() => {
+    const pathwayParam = searchParams.get('pathway');
+    if (pathwayParam === 'inpatient' || pathwayParam === 'referred') {
+      setPathway(pathwayParam);
+    }
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -96,7 +110,7 @@ export default function NewPatientPage() {
         },
         urgency: formData.urgency as 'Routine' | 'Urgent' | 'STAT',
         paymentType: formData.paymentType as 'Cash' | 'Insurance' | 'Corporate',
-        isExternalReferral: false,
+        isExternalReferral: pathway === 'referred',
         createdBy: userProfile.id,
       };
 
@@ -129,13 +143,35 @@ export default function NewPatientPage() {
         patientData.corporateClient = formData.corporateClient.trim();
       }
 
+      // Add pathway-specific fields for referred patients
+      if (pathway === 'referred') {
+        if (formData.requestFormNumber?.trim()) {
+          (patientData as Partial<Patient> & { requestFormNumber?: string }).requestFormNumber = formData.requestFormNumber.trim();
+        }
+        if (formData.requestingPhysician?.trim()) {
+          (patientData as Partial<Patient> & { requestingPhysician?: string }).requestingPhysician = formData.requestingPhysician.trim();
+        }
+        if (formData.clinicalDiagnosis?.trim()) {
+          (patientData as Partial<Patient> & { clinicalDiagnosis?: string }).clinicalDiagnosis = formData.clinicalDiagnosis.trim();
+        }
+        if (formData.requestedTests?.trim()) {
+          (patientData as Partial<Patient> & { requestedTests?: string }).requestedTests = formData.requestedTests.trim();
+        }
+      }
+
       const newPatientId = await firestoreService.create<Patient>(
         COLLECTIONS.PATIENTS,
         patientData
       );
 
-      // Redirect to test request page
-      router.push(`/dashboard/reception/patients/${newPatientId}/tests`);
+      // Redirect based on pathway
+      if (pathway === 'referred') {
+        // For referred patients, go to test selection with pre-filled data
+        router.push(`/dashboard/reception/patients/${newPatientId}/tests?referred=true`);
+      } else {
+        // For inpatients, generate lab request form first
+        router.push(`/dashboard/reception/patients/${newPatientId}/lab-request`);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to register patient';
       setError(errorMessage);
@@ -155,7 +191,22 @@ export default function NewPatientPage() {
                 Back
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Register New Patient</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Register New Patient</h1>
+              <div className="flex items-center mt-2">
+                {pathway === 'referred' ? (
+                  <>
+                    <FileText className="w-5 h-5 text-primary mr-2" />
+                    <span className="text-sm text-gray-600">Pathway 1: Patient with Lab Request Form</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-5 h-5 text-secondary mr-2" />
+                    <span className="text-sm text-gray-600">Pathway 2: Inpatient (Biodata Only)</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -167,6 +218,58 @@ export default function NewPatientPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
+            {/* Lab Request Information - Only for Referred Patients */}
+            {pathway === 'referred' && (
+              <Card title="Lab Request Form Information" className="border-primary/20 bg-primary/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Request Form Number"
+                    name="requestFormNumber"
+                    value={formData.requestFormNumber}
+                    onChange={handleChange}
+                    placeholder="e.g., REQ-2024-001"
+                    required
+                  />
+                  <Input
+                    label="Requesting Physician"
+                    name="requestingPhysician"
+                    value={formData.requestingPhysician}
+                    onChange={handleChange}
+                    placeholder="Dr. Name"
+                    required
+                  />
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Clinical Diagnosis
+                    </label>
+                    <textarea
+                      name="clinicalDiagnosis"
+                      value={formData.clinicalDiagnosis}
+                      onChange={handleChange}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Primary diagnosis from referring physician"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Requested Tests (from form)
+                    </label>
+                    <textarea
+                      name="requestedTests"
+                      value={formData.requestedTests}
+                      onChange={handleChange}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Tests requested by physician (will be verified during test selection)"
+                      required
+                    />
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* Personal Information */}
             <Card title="Personal Information">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -388,12 +491,23 @@ export default function NewPatientPage() {
                 </Button>
               </Link>
               <Button type="submit" isLoading={loading}>
-                Register Patient & Select Tests
+                {pathway === 'referred' 
+                  ? 'Register Patient & Select Tests' 
+                  : 'Register Patient & Generate Lab Request'
+                }
               </Button>
             </div>
           </div>
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function NewPatientPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NewPatientPageContent />
+    </Suspense>
   );
 }

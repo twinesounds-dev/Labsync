@@ -6,45 +6,161 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { CheckCircle, XCircle, Search, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Eye, FileText, Printer } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
-import { TestResult } from '@/types';
-import { format } from 'date-fns';
+import { TestResult, Facility, Patient, Test, User, TestRequest } from '@/types';
+import ClinicalReport from '@/components/reports/ClinicalReport';
+
+interface ExtendedTestResult extends TestResult {
+  patient?: Patient;
+  test?: Test;
+  performedByUser?: User;
+  testRequest?: TestRequest;
+}
 
 export default function ApprovalsPage() {
   const { userProfile } = useAuth();
-  const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [testResults, setTestResults] = useState<ExtendedTestResult[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
+  const [selectedResult, setSelectedResult] = useState<ExtendedTestResult | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [facility, setFacility] = useState<Facility | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
-    // Subscribe to submitted test results (across all facilities for owner)
-    const resultsQuery = query(
-      collection(db, COLLECTIONS.TEST_RESULTS),
-      where('status', '==', 'Submitted')
-    );
+    if (!userProfile?.facilityId) {
+      setLoading(false);
+      return;
+    }
 
-    const unsubscribe = onSnapshot(resultsQuery, (snapshot) => {
-      const resultsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        datePerformed: doc.data().datePerformed?.toDate() || new Date(),
-        dateSubmitted: doc.data().dateSubmitted?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as TestResult[];
+    // Load facility data
+    const loadFacility = async () => {
+      try {
+        const facilityData = await firestoreService.getById<Facility>(COLLECTIONS.FACILITIES, userProfile.facilityId);
+        setFacility(facilityData);
+      } catch (error) {
+        console.error('Error loading facility:', error);
+      }
+    };
 
+    loadFacility();
+
+    // Subscribe to submitted test results 
+    // For owners, we might need to show all facilities or just their facility
+    // Let's check user role and adjust accordingly
+    const isOwner = userProfile.role === 'owner';
+    
+    const resultsQuery = debugMode || isOwner
+      ? query(
+          collection(db, COLLECTIONS.TEST_RESULTS),
+          where('status', '==', 'Submitted')
+        )
+      : query(
+          collection(db, COLLECTIONS.TEST_RESULTS),
+          where('facilityId', '==', userProfile.facilityId),
+          where('status', '==', 'Submitted')
+        );
+
+    console.log('Setting up approvals query for facility:', userProfile.facilityId);
+
+    const unsubscribe = onSnapshot(resultsQuery, async (snapshot) => {
+      console.log('Approvals query snapshot received:', snapshot.size, 'documents');
+      const resultsData: ExtendedTestResult[] = [];
+
+      if (snapshot.empty) {
+        console.log('No documents found in query. Checking if any test results exist...');
+        setTestResults([]);
+        setLoading(false);
+        return;
+      }
+
+      for (const doc of snapshot.docs) {
+        console.log('Processing result document:', doc.id, doc.data());
+        const docData = doc.data();
+        
+        const resultData = {
+          id: doc.id,
+          ...docData,
+          datePerformed: docData.datePerformed?.toDate() || new Date(),
+          dateSubmitted: docData.dateSubmitted?.toDate() || new Date(),
+          dateApproved: docData.dateApproved?.toDate(),
+          printedDate: docData.printedDate?.toDate(),
+          createdAt: docData.createdAt?.toDate() || new Date(),
+          updatedAt: docData.updatedAt?.toDate() || new Date(),
+        } as ExtendedTestResult;
+
+        // Load patient data
+        if (resultData.patientId) {
+          try {
+            const patient = await firestoreService.getById(COLLECTIONS.PATIENTS, resultData.patientId);
+            resultData.patient = patient as Patient;
+          } catch (error) {
+            console.error('Error loading patient:', error);
+          }
+        }
+
+        // Load test data
+        if (resultData.testId) {
+          try {
+            const test = await firestoreService.getById(COLLECTIONS.TESTS, resultData.testId);
+            resultData.test = test as Test;
+          } catch (error) {
+            console.error('Error loading test:', error);
+          }
+        }
+
+        // Load performed by user data
+        if (resultData.performedBy) {
+          try {
+            const user = await firestoreService.getById(COLLECTIONS.USERS, resultData.performedBy);
+            resultData.performedByUser = user as User;
+          } catch (error) {
+            console.error('Error loading user:', error);
+          }
+        }
+
+        // Load test request data
+        if (resultData.testRequestId) {
+          try {
+            const testRequest = await firestoreService.getById(COLLECTIONS.TEST_REQUESTS, resultData.testRequestId);
+            resultData.testRequest = testRequest as TestRequest;
+          } catch (error) {
+            console.error('Error loading test request:', error);
+          }
+        }
+
+        resultsData.push(resultData);
+      }
+
+      console.log('Final results data:', resultsData.length, 'results loaded');
       setTestResults(resultsData);
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    // Also check for all submitted results (for debugging)
+    const allResultsQuery = query(
+      collection(db, COLLECTIONS.TEST_RESULTS),
+      where('status', '==', 'Submitted')
+    );
+
+    const debugUnsubscribe = onSnapshot(allResultsQuery, (snapshot) => {
+      console.log('DEBUG: All submitted results across all facilities:', snapshot.size);
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        console.log('DEBUG: Result', doc.id, 'facilityId:', data.facilityId, 'status:', data.status);
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      debugUnsubscribe();
+    };
+  }, [userProfile?.facilityId, userProfile?.role, debugMode]);
 
   const handleApprove = async (resultId: string) => {
     if (!userProfile) return;
@@ -52,14 +168,26 @@ export default function ApprovalsPage() {
     setProcessing(true);
 
     try {
+      // Update test result status
       await firestoreService.update(COLLECTIONS.TEST_RESULTS, resultId, {
         status: 'Approved',
         approvedBy: userProfile.id,
         dateApproved: new Date(),
+        updatedAt: new Date(),
       });
 
-      alert('Test result approved successfully!');
-      setSelectedResult(null);
+      // Update test request overall status
+      const result = testResults.find(r => r.id === resultId);
+      if (result?.testRequestId) {
+        await firestoreService.update(COLLECTIONS.TEST_REQUESTS, result.testRequestId, {
+          overallStatus: 'Approved',
+          updatedAt: new Date(),
+        });
+      }
+
+      alert('Test result approved successfully! Report is now ready for printing.');
+      // Don't close the modal, show the report instead
+      setShowReport(true);
     } catch (error) {
       console.error('Error approving result:', error);
       alert('Failed to approve result');
@@ -95,6 +223,40 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleGenerateReport = (result: ExtendedTestResult) => {
+    setSelectedResult(result);
+    setShowReport(true);
+  };
+
+  const handlePrintReport = () => {
+    window.print();
+  };
+
+  const handleSendToReception = async (resultId: string) => {
+    try {
+      setProcessing(true);
+      
+      // Mark the report as ready for printing at reception
+      await firestoreService.update(COLLECTIONS.TEST_RESULTS, resultId, {
+        printedBy: null, // Will be set when reception prints
+        printedDate: null, // Will be set when reception prints
+        status: 'Approved', // Keep as approved but ready for printing
+        reportReadyForPrint: true,
+        sentToReceptionAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      alert('Report sent to reception for printing successfully!');
+      setSelectedResult(null);
+      setShowReport(false);
+    } catch (error) {
+      console.error('Error sending to reception:', error);
+      alert('Failed to send report to reception');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const filteredResults = testResults.filter(
     (result) =>
       result.patient?.patientId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,6 +282,50 @@ export default function ApprovalsPage() {
           <p className="text-gray-600 mt-1">
             Review and approve test results before releasing to patients
           </p>
+          <div className="mt-2 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Role: {userProfile?.role} | Facility ID: {userProfile?.facilityId} | Results loaded: {testResults.length}
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDebugMode(!debugMode)}
+                className="text-xs"
+              >
+                {debugMode ? 'Show Facility Only' : 'Debug: Show All'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="text-xs"
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/seed-test-results', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                      alert('Test results seeded successfully!');
+                      window.location.reload();
+                    } else {
+                      alert('Failed to seed test results: ' + result.error);
+                    }
+                  } catch {
+                    alert('Failed to seed test results');
+                  }
+                }}
+                className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              >
+                Seed Test Data
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Search */}
@@ -136,7 +342,60 @@ export default function ApprovalsPage() {
           </div>
         </Card>
 
-        {selectedResult ? (
+        {selectedResult && showReport ? (
+          /* Clinical Report View */
+          <div className="space-y-6">
+            {/* Report Actions */}
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Clinical Report</h2>
+                  <p className="text-sm text-gray-600">
+                    Patient: {selectedResult.patient?.surname}, {selectedResult.patient?.givenName} 
+                    ({selectedResult.patient?.patientId})
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowReport(false)}
+                  >
+                    Back to Review
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handlePrintReport}
+                    className="no-print"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    Print Report
+                  </Button>
+                  <Button
+                    onClick={() => handleSendToReception(selectedResult.id)}
+                    isLoading={processing}
+                    className="no-print"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Send to Reception
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Clinical Report */}
+            {facility && selectedResult.test && selectedResult.patient && (
+              <ClinicalReport
+                testResult={selectedResult}
+                patient={selectedResult.patient}
+                test={selectedResult.test}
+                facility={facility}
+                performedBy={selectedResult.performedByUser}
+                approvedBy={userProfile || undefined}
+                reportId={`RPT-${selectedResult.id.slice(-8).toUpperCase()}`}
+              />
+            )}
+          </div>
+        ) : selectedResult ? (
           /* Result Detail View */
           <Card>
             <div className="space-y-4">
@@ -144,7 +403,11 @@ export default function ApprovalsPage() {
                 <h2 className="text-xl font-bold text-gray-900">Review Test Result</h2>
                 <Button
                   size="sm"
-                  onClick={() => setSelectedResult(null)}
+                  onClick={() => {
+                    setSelectedResult(null);
+                    setShowReport(false);
+                    setRejectionReason('');
+                  }}
                   className="bg-gray-500 hover:bg-gray-600"
                 >
                   Back to List
@@ -247,7 +510,15 @@ export default function ApprovalsPage() {
                   className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
                 >
                   <CheckCircle className="w-5 h-5" />
-                  {processing ? 'Processing...' : 'Approve Result'}
+                  {processing ? 'Processing...' : 'Approve & Generate Report'}
+                </Button>
+                <Button
+                  onClick={() => handleGenerateReport(selectedResult)}
+                  disabled={processing}
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  <FileText className="w-5 h-5" />
+                  Preview Report
                 </Button>
                 <Button
                   onClick={() => handleReject(selectedResult.id)}
@@ -269,11 +540,23 @@ export default function ApprovalsPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   No pending approvals
                 </h3>
-                <p className="text-gray-600">
-                  {searchTerm
-                    ? 'Try a different search term'
-                    : 'All test results have been reviewed!'}
-                </p>
+                <div className="text-gray-600 space-y-2">
+                  {searchTerm ? (
+                    <p>Try a different search term</p>
+                  ) : (
+                    <div>
+                      <p>No test results are pending approval for this facility.</p>
+                      <div className="text-sm text-gray-500 mt-4 space-y-1">
+                        <p>• Check that lab technicians have submitted results</p>
+                        <p>• Verify that results are marked as &quot;Submitted&quot; status</p>
+                        <p>• Ensure results belong to facility: {userProfile?.facilityId}</p>
+                        {debugMode && (
+                          <p className="text-blue-600">• Debug mode: Showing all facilities</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -322,7 +605,7 @@ export default function ApprovalsPage() {
                           {result.performedByUser?.lastName}
                         </td>
                         <td className="py-3 px-4 text-gray-600">
-                          {format(result.datePerformed, 'dd MMM yyyy HH:mm')}
+                          {result.datePerformed.toLocaleDateString('en-GB')} {result.datePerformed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="py-3 px-4">
                           <Button

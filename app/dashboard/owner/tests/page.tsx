@@ -1,131 +1,153 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import { Plus, Upload, Trash2, Search } from 'lucide-react';
-import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { Test, TestCategory } from '@/types';
+import { firestoreService, COLLECTIONS } from '@/lib/firestore';
+import { 
+  TestTube, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search, 
+  Filter,
+  DollarSign,
+  Clock,
+  Eye,
+  Settings,
+  Download,
+  Upload
+} from 'lucide-react';
+import Link from 'next/link';
 
-export default function TestManagementPage() {
+export default function TestsManagementPage() {
+  const { userProfile } = useAuth();
   const [tests, setTests] = useState<Test[]>([]);
   const [categories, setCategories] = useState<TestCategory[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredTests, setFilteredTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTest, setEditingTest] = useState<Test | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [newTest, setNewTest] = useState({
     code: '',
     name: '',
     categoryId: '',
-    price: '',
+    price: 0,
     turnaroundTime: '',
     sampleType: '',
     containerType: '',
     storageRequirements: '',
+    isActive: true,
   });
 
-  const [importData, setImportData] = useState('');
+  useEffect(() => {
+    loadTests();
+    loadCategories();
+  }, [userProfile?.facilityId]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let filtered = tests;
 
-  const loadData = async () => {
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(test => 
+        test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        test.code.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(test => test.categoryId === categoryFilter);
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      const isActive = statusFilter === 'active';
+      filtered = filtered.filter(test => test.isActive === isActive);
+    }
+
+    setFilteredTests(filtered);
+  }, [tests, searchTerm, categoryFilter, statusFilter]);
+
+  const loadTests = async () => {
     try {
-      const [testsData, categoriesData] = await Promise.all([
-        firestoreService.getAll<Test>(COLLECTIONS.TESTS),
-        firestoreService.getAll<TestCategory>(COLLECTIONS.TEST_CATEGORIES),
-      ]);
+      const testsData = await firestoreService.getAll<Test>(COLLECTIONS.TESTS);
       setTests(testsData);
-      setCategories(categoriesData);
     } catch (error) {
-      console.error('Error loading data:', error);
-      alert('Failed to load data');
+      console.error('Error loading tests:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddTest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
+  const loadCategories = async () => {
     try {
-      await firestoreService.create<Test>(COLLECTIONS.TESTS, {
-        code: formData.code,
-        name: formData.name,
-        categoryId: formData.categoryId,
-        price: parseFloat(formData.price),
-        turnaroundTime: formData.turnaroundTime,
-        sampleType: formData.sampleType,
-        containerType: formData.containerType,
-        storageRequirements: formData.storageRequirements,
-        isActive: true,
-      } as Partial<Test>);
+      const categoriesData = await firestoreService.getAll<TestCategory>(COLLECTIONS.TEST_CATEGORIES);
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
-      alert('Test added successfully!');
-      setFormData({
+  const handleAddTest = async () => {
+    try {
+      if (!newTest.code || !newTest.name || !newTest.categoryId) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      await firestoreService.create<Test>(COLLECTIONS.TESTS, {
+        ...newTest,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      setShowAddModal(false);
+      setNewTest({
         code: '',
         name: '',
         categoryId: '',
-        price: '',
+        price: 0,
         turnaroundTime: '',
         sampleType: '',
         containerType: '',
         storageRequirements: '',
+        isActive: true,
       });
-      setIsModalOpen(false);
-      loadData();
+      
+      loadTests();
+      alert('Test added successfully!');
     } catch (error) {
       console.error('Error adding test:', error);
       alert('Failed to add test');
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  const handleImportTests = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
+  const handleEditTest = async () => {
     try {
-      // Parse CSV or JSON data
-      const lines = importData.trim().split('\n');
-      
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        if (values.length < 5) continue;
+      if (!editingTest) return;
 
-        const testData = {
-          code: values[0],
-          name: values[1],
-          categoryId: values[2],
-          price: parseFloat(values[3]),
-          turnaroundTime: values[4],
-          sampleType: values[5] || 'Blood',
-          containerType: values[6] || '',
-          storageRequirements: values[7] || '',
-          isActive: true,
-        };
+      await firestoreService.update(COLLECTIONS.TESTS, editingTest.id, {
+        ...editingTest,
+        updatedAt: new Date(),
+      });
 
-        await firestoreService.create<Test>(COLLECTIONS.TESTS, testData as Partial<Test>);
-      }
-
-      alert(`Successfully imported ${lines.length - 1} tests!`);
-      setImportData('');
-      setIsImportModalOpen(false);
-      loadData();
+      setEditingTest(null);
+      loadTests();
+      alert('Test updated successfully!');
     } catch (error) {
-      console.error('Error importing tests:', error);
-      alert('Failed to import tests. Please check the format.');
-    } finally {
-      setSubmitting(false);
+      console.error('Error updating test:', error);
+      alert('Failed to update test');
     }
   };
 
@@ -133,29 +155,60 @@ export default function TestManagementPage() {
     if (!confirm('Are you sure you want to delete this test?')) return;
 
     try {
-      await firestoreService.update(COLLECTIONS.TESTS, testId, {
-        isActive: false,
-      });
-      alert('Test deactivated successfully');
-      loadData();
+      await firestoreService.delete(COLLECTIONS.TESTS, testId);
+      loadTests();
+      alert('Test deleted successfully!');
     } catch (error) {
       console.error('Error deleting test:', error);
       alert('Failed to delete test');
     }
   };
 
-  const filteredTests = tests.filter(
-    (test) =>
-      test.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      test.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      test.sampleType?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const toggleTestStatus = async (test: Test) => {
+    try {
+      await firestoreService.update(COLLECTIONS.TESTS, test.id, {
+        isActive: !test.isActive,
+        updatedAt: new Date(),
+      });
+      loadTests();
+    } catch (error) {
+      console.error('Error updating test status:', error);
+      alert('Failed to update test status');
+    }
+  };
+
+  const exportTests = () => {
+    const csvContent = [
+      ['Code', 'Name', 'Category', 'Price', 'Turnaround Time', 'Sample Type', 'Status'].join(','),
+      ...filteredTests.map(test => [
+        test.code,
+        test.name,
+        categories.find(c => c.id === test.categoryId)?.name || 'Unknown',
+        test.price,
+        test.turnaroundTime,
+        test.sampleType,
+        test.isActive ? 'Active' : 'Inactive'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tests_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const getCategoryName = (categoryId: string) => {
+    return categories.find(c => c.id === categoryId)?.name || 'Unknown';
+  };
 
   if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-gray-500">Loading tests...</div>
         </div>
       </DashboardLayout>
     );
@@ -164,333 +217,366 @@ export default function TestManagementPage() {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Test Management</h1>
-            <p className="text-gray-600 mt-1">Manage laboratory tests and pricing</p>
+            <h1 className="text-3xl font-bold text-gray-900">Tests Management</h1>
+            <p className="text-gray-600 mt-1">Manage laboratory tests, pricing, and categories</p>
           </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => setIsImportModalOpen(true)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-            >
-              <Upload className="w-5 h-5" />
-              Import Tests
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={exportTests}>
+              <Download className="w-4 h-4 mr-2" />
+              Export
             </Button>
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Add New Test
+            <Button variant="outline">
+              <Upload className="w-4 h-4 mr-2" />
+              Import
+            </Button>
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Test
             </Button>
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Test Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-700 font-medium">Total Tests</p>
+                <p className="text-2xl font-bold text-blue-900">{tests.length}</p>
+              </div>
+              <TestTube className="w-8 h-8 text-blue-600 opacity-50" />
+            </div>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-700 font-medium">Active Tests</p>
+                <p className="text-2xl font-bold text-green-900">
+                  {tests.filter(t => t.isActive).length}
+                </p>
+              </div>
+              <Settings className="w-8 h-8 text-green-600 opacity-50" />
+            </div>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-700 font-medium">Categories</p>
+                <p className="text-2xl font-bold text-purple-900">{categories.length}</p>
+              </div>
+              <Filter className="w-8 h-8 text-purple-600 opacity-50" />
+            </div>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-orange-700 font-medium">Avg. Price</p>
+                <p className="text-2xl font-bold text-orange-900">
+                  {tests.length > 0 ? Math.round(tests.reduce((sum, t) => sum + t.price, 0) / tests.length / 1000) : 0}K
+                </p>
+                <p className="text-xs text-orange-600">UGX</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-orange-600 opacity-50" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Filters */}
         <Card className="mb-6">
-          <div className="flex items-center gap-3">
-            <Search className="w-5 h-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search tests by name, code, or sample type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 border-none focus:ring-0"
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Test name or code..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select
+              label="Category"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+              ]}
             />
+            <Select
+              label="Status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ]}
+            />
+            <div className="flex items-end">
+              <Link href="/dashboard/owner/tests/categories" className="w-full">
+                <Button variant="outline" className="w-full">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage Categories
+                </Button>
+              </Link>
+            </div>
           </div>
         </Card>
 
         {/* Tests List */}
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Code
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Test Name
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Category
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Sample Type
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Price (UGX)
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    TAT
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Status
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTests.map((test) => {
-                  const category = categories.find((c) => c.id === test.categoryId);
-                  return (
-                    <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium text-gray-900">
-                        {test.code}
+        <Card title="Tests List" subtitle={`${filteredTests.length} tests`}>
+          {filteredTests.length === 0 ? (
+            <div className="text-center py-8">
+              <TestTube className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No tests found matching your criteria</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Test
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Turnaround
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sample Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredTests.map((test) => (
+                    <tr key={test.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{test.name}</div>
+                          <div className="text-sm text-gray-500">{test.code}</div>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-900">{test.name}</td>
-                      <td className="py-3 px-4 text-gray-600">
-                        {category?.name || 'N/A'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {getCategoryName(test.categoryId)}
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{test.sampleType}</td>
-                      <td className="py-3 px-4 text-gray-900 font-medium">
-                        {test.price.toLocaleString()}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          UGX {test.price.toLocaleString()}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">
-                        {test.turnaroundTime}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Clock className="w-4 h-4 mr-1 text-gray-400" />
+                          {test.turnaroundTime}
+                        </div>
                       </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {test.sampleType}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => toggleTestStatus(test)}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             test.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200'
                           }`}
                         >
                           {test.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleDeleteTest(test.id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Deactivate Test"
-                        >
-                          <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setEditingTest(test)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <Link href={`/dashboard/owner/tests/${test.id}`}>
+                            <button className="text-blue-600 hover:text-blue-900">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteTest(test.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filteredTests.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No tests found
-              </div>
-            )}
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
 
         {/* Add Test Modal */}
-        {isModalOpen && (
+        {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-4">Add New Test</h2>
-              <form onSubmit={handleAddTest} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Test Code *
-                    </label>
-                    <Input
-                      type="text"
-                      required
-                      value={formData.code}
-                      onChange={(e) =>
-                        setFormData({ ...formData, code: e.target.value })
-                      }
-                      placeholder="e.g., MAL, HIV, LFT"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Test Name *
-                    </label>
-                    <Input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      placeholder="e.g., Malaria Test"
-                    />
-                  </div>
-                </div>
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Test</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Input
+                  label="Test Code"
+                  value={newTest.code}
+                  onChange={(e) => setNewTest({ ...newTest, code: e.target.value })}
+                  placeholder="e.g., FBC"
+                  required
+                />
+                <Input
+                  label="Test Name"
+                  value={newTest.name}
+                  onChange={(e) => setNewTest({ ...newTest, name: e.target.value })}
+                  placeholder="e.g., Full Blood Count"
+                  required
+                />
+                <Select
+                  label="Category"
+                  value={newTest.categoryId}
+                  onChange={(e) => setNewTest({ ...newTest, categoryId: e.target.value })}
+                  options={[
+                    { value: '', label: 'Select Category' },
+                    ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                  ]}
+                  required
+                />
+                <Input
+                  label="Price (UGX)"
+                  type="number"
+                  value={newTest.price}
+                  onChange={(e) => setNewTest({ ...newTest, price: parseInt(e.target.value) || 0 })}
+                  required
+                />
+                <Input
+                  label="Turnaround Time"
+                  value={newTest.turnaroundTime}
+                  onChange={(e) => setNewTest({ ...newTest, turnaroundTime: e.target.value })}
+                  placeholder="e.g., 2 hours"
+                />
+                <Input
+                  label="Sample Type"
+                  value={newTest.sampleType}
+                  onChange={(e) => setNewTest({ ...newTest, sampleType: e.target.value })}
+                  placeholder="e.g., Blood (EDTA)"
+                />
+                <Input
+                  label="Container Type"
+                  value={newTest.containerType}
+                  onChange={(e) => setNewTest({ ...newTest, containerType: e.target.value })}
+                  placeholder="e.g., Purple top tube"
+                />
+                <Input
+                  label="Storage Requirements"
+                  value={newTest.storageRequirements}
+                  onChange={(e) => setNewTest({ ...newTest, storageRequirements: e.target.value })}
+                  placeholder="e.g., Room temperature"
+                />
+              </div>
 
-                <div>
-                  <Select
-                    label="Category"
-                    required
-                    value={formData.categoryId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, categoryId: e.target.value })
-                    }
-                    options={[
-                      { value: '', label: 'Select Category' },
-                      ...categories.map((category) => ({
-                        value: category.id,
-                        label: category.name,
-                      })),
-                    ]}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (UGX) *
-                    </label>
-                    <Input
-                      type="number"
-                      required
-                      value={formData.price}
-                      onChange={(e) =>
-                        setFormData({ ...formData, price: e.target.value })
-                      }
-                      placeholder="e.g., 15000"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Turnaround Time *
-                    </label>
-                    <Input
-                      type="text"
-                      required
-                      value={formData.turnaroundTime}
-                      onChange={(e) =>
-                        setFormData({ ...formData, turnaroundTime: e.target.value })
-                      }
-                      placeholder="e.g., 2 hours"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Select
-                      label="Sample Type"
-                      required
-                      value={formData.sampleType}
-                      onChange={(e) =>
-                        setFormData({ ...formData, sampleType: e.target.value })
-                      }
-                      options={[
-                        { value: '', label: 'Select Sample Type' },
-                        { value: 'Blood', label: 'Blood' },
-                        { value: 'Urine', label: 'Urine' },
-                        { value: 'Stool', label: 'Stool' },
-                        { value: 'Sputum', label: 'Sputum' },
-                        { value: 'Swab', label: 'Swab' },
-                        { value: 'Other', label: 'Other' },
-                      ]}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Container Type
-                    </label>
-                    <Input
-                      type="text"
-                      value={formData.containerType}
-                      onChange={(e) =>
-                        setFormData({ ...formData, containerType: e.target.value })
-                      }
-                      placeholder="e.g., EDTA tube"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Storage Requirements
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.storageRequirements}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        storageRequirements: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Store at 2-8°C"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    {submitting ? 'Adding...' : 'Add Test'}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    disabled={submitting}
-                    className="flex-1 bg-gray-500 hover:bg-gray-600"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+              <div className="flex justify-end space-x-4">
+                <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddTest}>
+                  Add Test
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Import Tests Modal */}
-        {isImportModalOpen && (
+        {/* Edit Test Modal */}
+        {editingTest && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-4">Import Tests (CSV Format)</h2>
-              <p className="text-gray-600 mb-4">
-                Enter test data in CSV format. First line should be headers:
-                <br />
-                <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                  code,name,categoryId,price,turnaroundTime,sampleType,containerType,storageRequirements
-                </code>
-              </p>
-              <form onSubmit={handleImportTests} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    CSV Data *
-                  </label>
-                  <textarea
-                    required
-                    value={importData}
-                    onChange={(e) => setImportData(e.target.value)}
-                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
-                    placeholder="code,name,categoryId,price,turnaroundTime,sampleType,containerType,storageRequirements
-MAL,Malaria Test,cat123,15000,2 hours,Blood,EDTA tube,Room temp
-HIV,HIV Test,cat123,25000,1 hour,Blood,EDTA tube,2-8°C"
-                  />
-                </div>
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Test</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Input
+                  label="Test Code"
+                  value={editingTest.code}
+                  onChange={(e) => setEditingTest({ ...editingTest, code: e.target.value })}
+                  required
+                />
+                <Input
+                  label="Test Name"
+                  value={editingTest.name}
+                  onChange={(e) => setEditingTest({ ...editingTest, name: e.target.value })}
+                  required
+                />
+                <Select
+                  label="Category"
+                  value={editingTest.categoryId}
+                  onChange={(e) => setEditingTest({ ...editingTest, categoryId: e.target.value })}
+                  options={[
+                    { value: '', label: 'Select Category' },
+                    ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                  ]}
+                  required
+                />
+                <Input
+                  label="Price (UGX)"
+                  type="number"
+                  value={editingTest.price}
+                  onChange={(e) => setEditingTest({ ...editingTest, price: parseInt(e.target.value) || 0 })}
+                  required
+                />
+                <Input
+                  label="Turnaround Time"
+                  value={editingTest.turnaroundTime}
+                  onChange={(e) => setEditingTest({ ...editingTest, turnaroundTime: e.target.value })}
+                />
+                <Input
+                  label="Sample Type"
+                  value={editingTest.sampleType}
+                  onChange={(e) => setEditingTest({ ...editingTest, sampleType: e.target.value })}
+                />
+                <Input
+                  label="Container Type"
+                  value={editingTest.containerType || ''}
+                  onChange={(e) => setEditingTest({ ...editingTest, containerType: e.target.value })}
+                />
+                <Input
+                  label="Storage Requirements"
+                  value={editingTest.storageRequirements || ''}
+                  onChange={(e) => setEditingTest({ ...editingTest, storageRequirements: e.target.value })}
+                />
+              </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    {submitting ? 'Importing...' : 'Import Tests'}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setIsImportModalOpen(false)}
-                    disabled={submitting}
-                    className="flex-1 bg-gray-500 hover:bg-gray-600"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+              <div className="flex justify-end space-x-4">
+                <Button variant="outline" onClick={() => setEditingTest(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditTest}>
+                  Update Test
+                </Button>
+              </div>
             </div>
           </div>
         )}

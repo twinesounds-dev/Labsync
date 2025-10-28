@@ -93,8 +93,11 @@ export default function EnterResultsPage() {
           resultValues,
           remarks: remarks[test.testId],
           datePerformed: new Date(),
+          dateSubmitted: new Date(),
           performedBy: userProfile.id,
           status: 'Submitted',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         } as Partial<TestResult>);
 
         // Update test status in request

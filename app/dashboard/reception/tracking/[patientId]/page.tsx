@@ -211,11 +211,7 @@ export default function PatientTrackingPage() {
             {requests.map((request) => (
               <div key={request.id}>
                 <SampleTracker
-                  request={request}
-                  results={results[request.id] || []}
-                  onViewDetails={() => {
-                    // Navigate to detailed view if needed
-                  }}
+                  testRequestId={request.id}
                 />
               </div>
             ))}
