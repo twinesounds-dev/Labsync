@@ -146,15 +146,20 @@ export default function ReceptionDashboard() {
             </div>
           </Card>
 
-          <Card title="Reports Ready for Collection" subtitle={`${stats.patientsWaitingForReports} reports`}>
-            <div className="space-y-3">
-              {stats.patientsWaitingForReports === 0 ? (
-                <p className="text-gray-500 text-sm">No reports ready</p>
-              ) : (
-                <p className="text-sm text-gray-600">Click to view and print</p>
-              )}
-            </div>
-          </Card>
+          <Link href="/dashboard/reception/reports/ready">
+            <Card title="Reports Ready for Collection" subtitle={`${stats.patientsWaitingForReports} reports`} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="space-y-3">
+                {stats.patientsWaitingForReports === 0 ? (
+                  <p className="text-gray-500 text-sm">No reports ready</p>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-600">Click to view and print</p>
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                )}
+              </div>
+            </Card>
+          </Link>
         </div>
       </div>
     </DashboardLayout>
