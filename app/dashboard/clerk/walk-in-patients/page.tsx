@@ -123,7 +123,8 @@ export default function WalkInPatientsPage() {
         })),
         clerkNotes: `Lab request created by clerk.\nClinical History: ${labRequestData.clinicalHistory}\nDiagnosis: ${labRequestData.clinicalDiagnosis}\nPhysician: ${labRequestData.requestingPhysician || 'N/A'}\nInstructions: ${labRequestData.specialInstructions || 'None'}`,
         paymentStatus: 'Pending' as const,
-        overallStatus: 'Pending' as const,
+        sampleCollectionStatus: 'PENDING' as const,
+        overallStatus: 'AwaitingPayment' as const,
       };
 
       await firestoreService.create<TestRequest>(

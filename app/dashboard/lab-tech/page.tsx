@@ -13,6 +13,7 @@ import { COLLECTIONS } from '@/lib/firestore';
 export default function LabTechDashboard() {
   const { userProfile } = useAuth();
   const [stats, setStats] = useState({
+    samplesReadyForProcessing: 0,
     pendingTests: 0,
     completedToday: 0,
     urgentTests: 0,
@@ -38,11 +39,17 @@ export default function LabTechDashboard() {
     );
 
     const unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
+      let samplesReadyForProcessing = 0;
       let pendingTests = 0;
       let urgentTests = 0;
 
       snapshot.docs.forEach((doc) => {
         const data = doc.data();
+
+        // NEW: Count samples ready for lab processing (collected but not yet processed)
+        if (data.sampleCollectionStatus === 'COLLECTED' || data.sampleCollectionStatus === 'SENT_TO_LAB') {
+          samplesReadyForProcessing++;
+        }
 
         // Count tests that have been paid for and sample received
         if (data.sampleReceivedDate && Array.isArray(data.tests)) {
@@ -59,7 +66,7 @@ export default function LabTechDashboard() {
         }
       });
 
-      setStats((prev) => ({ ...prev, pendingTests, urgentTests }));
+      setStats((prev) => ({ ...prev, samplesReadyForProcessing, pendingTests, urgentTests }));
     });
 
     // Subscribe to test results for completed today
@@ -102,7 +109,22 @@ export default function LabTechDashboard() {
         </h1>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-600 font-medium">
+                  Samples Ready
+                </p>
+                <p className="text-3xl font-bold text-purple-900 mt-1">
+                  {stats.samplesReadyForProcessing}
+                </p>
+                <p className="text-xs text-purple-600 mt-1">Collected & ready</p>
+              </div>
+              <FlaskConical className="w-12 h-12 text-purple-500 opacity-50" />
+            </div>
+          </Card>
+
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none">
             <div className="flex items-center justify-between">
               <div>

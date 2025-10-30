@@ -129,7 +129,10 @@ export interface Test {
   price: number; // UGX
   turnaroundTime: string; // e.g., "2 hours", "24 hours"
   sampleType: string; // blood, urine, stool, etc.
+  sampleTypeEnum?: SampleType; // Standardized sample type
   containerType?: string;
+  containerTypeEnum?: ContainerType; // Standardized container type
+  volumeRequired?: string; // e.g., "3-5ml", "10ml", "Mid-stream sample"
   storageRequirements?: string;
   isActive: boolean;
   createdAt: Date;
@@ -271,6 +274,52 @@ export interface ClinicalReportData {
   updatedAt?: Date;
 }
 
+// Sample Types
+export type SampleType = 'BLOOD_EDTA' | 'BLOOD_SERUM' | 'BLOOD_PLASMA' | 'BLOOD_FLUORIDE' | 'URINE' | 'STOOL' | 'SPUTUM' | 'SWAB' | 'CSF' | 'OTHER';
+export type ContainerType = 'EDTA_TUBE' | 'PLAIN_TUBE' | 'FLUORIDE_TUBE' | 'HEPARIN_TUBE' | 'URINE_CONTAINER' | 'STOOL_CONTAINER' | 'SPUTUM_CONTAINER' | 'SWAB_KIT' | 'STERILE_CONTAINER' | 'OTHER';
+export type SampleStatus = 'PENDING' | 'COLLECTED' | 'REJECTED' | 'INSUFFICIENT' | 'HEMOLYZED' | 'CLOTTED' | 'CONTAMINATED';
+
+// Sample Collection Quality Check
+export interface QualityCheck {
+  checkType: 'volume' | 'container' | 'labeling' | 'integrity' | 'timing';
+  passed: boolean;
+  notes?: string;
+  checkedAt: Date;
+}
+
+// Individual Sample
+export interface Sample {
+  id: string;
+  sampleType: SampleType;
+  containerType: ContainerType;
+  volumeRequired: string;
+  volumeCollected?: string;
+  collectionTime: Date;
+  collectedBy: string; // User ID (Clerk)
+  status: SampleStatus;
+  qualityChecks: QualityCheck[];
+  barcodeNumber?: string;
+  storageLocation?: string;
+  notes?: string;
+  // Linked tests for this sample
+  relatedTestIds: string[];
+}
+
+// Sample Collection Session Data
+export interface SampleCollectionData {
+  sessionId: string;
+  collectionDate: Date;
+  collectedBy: string; // User ID (Clerk)
+  collectedByUser?: User;
+  samples: Sample[];
+  overallQualityStatus: 'PASSED' | 'PARTIAL' | 'FAILED';
+  rejectionReasons?: string[];
+  specialInstructions?: string;
+  patientConditionNotes?: string; // e.g., "Patient fasting", "Patient dehydrated"
+  recollectionRequired: boolean;
+  recollectionReasons?: string[];
+}
+
 // Test Request
 export interface TestRequest {
   id: string;
@@ -287,21 +336,24 @@ export interface TestRequest {
     test?: Test;
     status: 'Pending' | 'InProgress' | 'Completed' | 'Approved' | 'Rejected';
     price: number;
+    requiredSampleType?: SampleType; // Auto-populated from test definition
   }[];
   
-  // Sample Information
+  // Sample Information (Enhanced)
+  sampleCollectionStatus: 'PENDING' | 'READY_FOR_COLLECTION' | 'COLLECTING' | 'COLLECTED' | 'REJECTED' | 'SENT_TO_LAB';
   sampleCollectionDate?: Date;
   sampleReceivedDate?: Date;
   sampleReceivedBy?: string; // User ID (Clerk)
   clerkNotes?: string;
-  sampleCollectionData?: any; // Sample collection and QA data
+  sampleCollectionData?: SampleCollectionData; // Detailed collection and QA data
   sampleQualityNotes?: string;
   
   // Payment
   paymentStatus: 'Pending' | 'Partial' | 'Paid';
+  paymentCompletedAt?: Date;
   
   // Status
-  overallStatus: 'Pending' | 'SampleReceived' | 'InProgress' | 'Completed' | 'Approved';
+  overallStatus: 'Pending' | 'AwaitingPayment' | 'ReadyForCollection' | 'SampleCollected' | 'InLab' | 'InProgress' | 'Completed' | 'Approved';
   
   createdAt: Date;
   updatedAt: Date;
