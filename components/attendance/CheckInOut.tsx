@@ -98,7 +98,7 @@ export default function CheckInOut() {
   };
 
   const handleCheckOut = async () => {
-    if (!userProfile || !todayAttendance) return;
+    if (!userProfile || !todayAttendance || !todayAttendance.checkIn) return;
 
     setLoading(true);
 
