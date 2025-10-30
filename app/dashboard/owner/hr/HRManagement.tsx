@@ -310,7 +310,7 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
 
           {/* Quick Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card title="Today's Attendance Summary">
+            <Card title="Today&apos;s Attendance Summary">
               <div className="space-y-3">
                 {todayAttendance.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
@@ -372,7 +372,7 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
       {/* Attendance Tab */}
       {activeTab === 'attendance' && (
         <div className="space-y-6">
-          <Card title="Today's Attendance">
+          <Card title="Today&apos;s Attendance">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
