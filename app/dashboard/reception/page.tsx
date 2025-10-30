@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import { Users, Receipt, TestTube, DollarSign, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRealtimeStats } from '@/lib/hooks/useRealtimeStats';

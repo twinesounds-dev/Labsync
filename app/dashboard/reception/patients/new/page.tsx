@@ -135,27 +135,37 @@ function NewPatientPageContent() {
 
       // Referral patient specific fields
       if (patientType === 'referral') {
+        const referralData = patientData as Partial<Patient> & {
+          requestFormNumber?: string;
+          requestingPhysician?: string;
+          clinicalDiagnosis?: string;
+          requestedTests?: string;
+        };
         if (formData.requestFormNumber?.trim()) {
-          (patientData as any).requestFormNumber = formData.requestFormNumber.trim();
+          referralData.requestFormNumber = formData.requestFormNumber.trim();
         }
         if (formData.requestingPhysician?.trim()) {
-          (patientData as any).requestingPhysician = formData.requestingPhysician.trim();
+          referralData.requestingPhysician = formData.requestingPhysician.trim();
         }
         if (formData.clinicalDiagnosis?.trim()) {
-          (patientData as any).clinicalDiagnosis = formData.clinicalDiagnosis.trim();
+          referralData.clinicalDiagnosis = formData.clinicalDiagnosis.trim();
         }
         if (formData.requestedTests?.trim()) {
-          (patientData as any).requestedTests = formData.requestedTests.trim();
+          referralData.requestedTests = formData.requestedTests.trim();
         }
       }
 
       // Inpatient specific fields
       if (patientType === 'inpatient') {
+        const inpatientData = patientData as Partial<Patient> & {
+          originFacilityId?: string;
+          referralReason?: string;
+        };
         if (formData.sourceFacilityId?.trim()) {
-          (patientData as any).originFacilityId = formData.sourceFacilityId.trim();
+          inpatientData.originFacilityId = formData.sourceFacilityId.trim();
         }
         if (formData.transferNotes?.trim()) {
-          (patientData as any).referralReason = formData.transferNotes.trim();
+          inpatientData.referralReason = formData.transferNotes.trim();
         }
       }
 
