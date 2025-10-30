@@ -148,7 +148,7 @@ export default function SampleTracker({
             : 'Awaiting laboratory processing',
           status: testRequest.overallStatus === 'Completed' ? 'completed' :
                  testRequest.overallStatus === 'InProgress' ? 'current' :
-                 testRequest.overallStatus === 'SampleReceived' ? 'current' : 'pending',
+                 testRequest.overallStatus === 'SampleCollected' || testRequest.overallStatus === 'InLab' ? 'current' : 'pending',
           icon: <AlertTriangle className="w-5 h-5" />,
         },
         {

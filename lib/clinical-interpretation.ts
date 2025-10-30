@@ -4,7 +4,7 @@
  * with Uganda-specific disease patterns and medical guidelines
  */
 
-import { TestResult, Patient, ClinicalInterpretationTemplate } from '@/types';
+import { TestResult, ClinicalInterpretationTemplate } from '@/types';
 import { getNormalRangeForParameter } from './clinical-ranges';
 
 /**
