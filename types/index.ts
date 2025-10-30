@@ -136,17 +136,139 @@ export interface Test {
   updatedAt: Date;
 }
 
-// Test Normal Range
+// Test Normal Range (Enhanced with Clinical Reporting)
 export interface TestNormalRange {
   id: string;
   testId: string;
   parameter: string;
   unit: string;
+  
+  // Gender-specific ranges
   normalRangeMale?: string;
   normalRangeFemale?: string;
   normalRangeGeneral?: string;
+  
+  // Numeric ranges for automatic flagging
+  normalMinMale?: number;
+  normalMaxMale?: number;
+  normalMinFemale?: number;
+  normalMaxFemale?: number;
+  normalMinGeneral?: number;
+  normalMaxGeneral?: number;
+  
+  // Critical thresholds
+  criticalLowMale?: number;
+  criticalHighMale?: number;
+  criticalLowFemale?: number;
+  criticalHighFemale?: number;
+  criticalLowGeneral?: number;
+  criticalHighGeneral?: number;
+  
+  // Age-based ranges
   ageGroup?: string; // e.g., "Adult", "Child", "Infant"
+  ageMin?: number; // Minimum age in years
+  ageMax?: number; // Maximum age in years
+  
+  // Range type
+  rangeType: 'numeric' | 'qualitative' | 'category';
+  
+  // For qualitative tests (e.g., Positive/Negative)
+  normalValue?: string; // e.g., "Negative", "Non-Reactive"
+  abnormalValues?: string[]; // e.g., ["Positive", "Reactive"]
+  
+  // Configuration
+  isEditable: boolean;
+  isActive: boolean;
+  
   createdAt: Date;
+  updatedAt?: Date;
+}
+
+// Clinical Interpretation Template
+export interface ClinicalInterpretationTemplate {
+  id: string;
+  testId?: string; // If specific to a test
+  categoryId?: string; // If specific to a category
+  
+  // Trigger conditions
+  triggerType: 'single_parameter' | 'multiple_parameters' | 'pattern' | 'critical_value';
+  triggerParameters?: string[]; // Parameters that trigger this interpretation
+  triggerConditions?: {
+    parameter: string;
+    condition: 'high' | 'low' | 'critical_high' | 'critical_low' | 'positive' | 'negative';
+  }[];
+  
+  // Interpretation content
+  title: string;
+  interpretation: string;
+  clinicalSignificance?: string;
+  recommendations?: string[];
+  urgencyLevel: 'routine' | 'attention_required' | 'urgent' | 'critical';
+  
+  // Alert configuration
+  requiresNotification: boolean;
+  notificationRecipients?: string[]; // Role or user IDs
+  
+  // Customization
+  isSystemGenerated: boolean;
+  isEditable: boolean;
+  isActive: boolean;
+  
+  createdAt: Date;
+  updatedAt?: Date;
+  createdBy?: string;
+}
+
+// Clinical Report Data
+export interface ClinicalReportData {
+  id: string;
+  testResultId: string;
+  testResult?: TestResult;
+  patientId: string;
+  patient?: Patient;
+  facilityId: string;
+  
+  // Auto-generated interpretation
+  autoInterpretation?: string;
+  autoInterpretationTemplateIds?: string[];
+  
+  // Clinical findings
+  abnormalFindings: {
+    parameter: string;
+    value: string | number;
+    flag: string;
+    normalRange: string;
+    clinicalSignificance: string;
+  }[];
+  
+  criticalAlerts: {
+    parameter: string;
+    value: string | number;
+    criticalThreshold: string;
+    urgencyLevel: 'urgent' | 'critical';
+    recommendation: string;
+  }[];
+  
+  // Owner customization
+  ownerInterpretation?: string;
+  ownerNotes?: string;
+  additionalRecommendations?: string[];
+  followUpInstructions?: string;
+  
+  // Final combined interpretation
+  finalInterpretation: string;
+  
+  // Clinical context
+  clinicalCorrelation?: string;
+  differentialDiagnosis?: string[];
+  
+  // Report metadata
+  reportGeneratedAt: Date;
+  reportApprovedAt?: Date;
+  reportApprovedBy?: string;
+  
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 // Test Request
@@ -185,16 +307,25 @@ export interface TestRequest {
   updatedAt: Date;
 }
 
-// Test Result Value
+// Test Result Value (Enhanced)
 export interface ResultValue {
   parameter: string;
   value: string | number;
   unit: string;
   normalRange: string;
-  flag: 'Normal' | 'Low' | 'High' | 'Critical' | 'N/A';
+  flag: 'Normal' | 'Low' | 'High' | 'Critical Low' | 'Critical High' | 'Critical' | 'N/A';
+  
+  // Additional context
+  interpretation?: string; // Brief interpretation of this specific result
+  clinicalSignificance?: string; // What this abnormal value might indicate
+  
+  // Reference data
+  normalRangeId?: string; // Reference to TestNormalRange
+  genderSpecific?: boolean;
+  ageSpecific?: boolean;
 }
 
-// Test Result
+// Test Result (Enhanced with Clinical Reporting)
 export interface TestResult {
   id: string;
   testRequestId: string;
@@ -209,6 +340,23 @@ export interface TestResult {
   resultValues: ResultValue[];
   remarks?: string;
   
+  // Clinical Reporting (NEW)
+  clinicalReportId?: string;
+  clinicalReport?: ClinicalReportData;
+  
+  autoInterpretation?: string; // System-generated interpretation
+  ownerInterpretation?: string; // Owner-customized interpretation
+  finalInterpretation?: string; // Combined interpretation for report
+  
+  clinicalNotes?: string; // Additional clinical notes from owner
+  recommendations?: string[]; // Clinical recommendations
+  criticalAlerts?: string[]; // Critical findings requiring attention
+  
+  // Flags for quick filtering
+  hasCriticalValues?: boolean;
+  hasAbnormalValues?: boolean;
+  requiresUrgentAction?: boolean;
+  
   // Workflow
   datePerformed: Date;
   performedBy: string; // User ID (Lab Tech)
@@ -222,6 +370,8 @@ export interface TestResult {
   // Printing Information
   printedBy?: string;
   printedDate?: Date;
+  reportReadyForPrint?: boolean;
+  sentToReceptionAt?: Date;
   
   status: 'Pending' | 'Submitted' | 'Approved' | 'Rejected' | 'Printed';
   rejectionReason?: string;
