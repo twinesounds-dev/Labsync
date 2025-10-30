@@ -104,4 +104,16 @@ export const COLLECTIONS = {
   TEST_RESULTS: 'test_results',
   PAYMENTS: 'payments',
   AUDIT_LOGS: 'audit_logs',
+  // Multi-facility management
+  DAILY_INCOME: 'daily_income',
+  EXPENDITURES: 'expenditures',
+  FINANCIAL_SUMMARIES: 'financial_summaries',
+  INVENTORY_ITEMS: 'inventory_items',
+  CONSUMABLE_USAGE: 'consumable_usage',
+  STOCK_ALERTS: 'stock_alerts',
+  EMPLOYEES: 'employees',
+  ATTENDANCE_RECORDS: 'attendance_records',
+  LEAVE_REQUESTS: 'leave_requests',
+  PERFORMANCE_METRICS: 'performance_metrics',
+  FACILITY_CONFIGURATIONS: 'facility_configurations',
 };
