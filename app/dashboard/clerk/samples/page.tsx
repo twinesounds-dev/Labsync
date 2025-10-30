@@ -132,7 +132,8 @@ function SampleTrackingContent() {
       if (statusFilter === 'rejected') {
         // Filter for rejected samples (sample quality rejected)
         filtered = filtered.filter(sample => 
-          sample.sampleCollectionData?.sampleQuality === 'Rejected'
+          sample.sampleCollectionData?.overallQualityStatus === 'FAILED' ||
+          sample.sampleCollectionStatus === 'REJECTED'
         );
       } else {
         filtered = filtered.filter(sample => sample.overallStatus === statusFilter);

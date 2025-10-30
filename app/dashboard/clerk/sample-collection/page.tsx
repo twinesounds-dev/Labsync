@@ -6,8 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import Select from '@/components/ui/Select';
-import { TestRequest, Patient, Test, Sample, QualityCheck, SampleCollectionData, SampleType, ContainerType, SampleStatus } from '@/types';
+import { TestRequest, Patient, Test, Sample, SampleCollectionData, SampleStatus } from '@/types';
 import { firestoreService, COLLECTIONS } from '@/lib/firestore';
 import { 
   TestTube, 
@@ -20,7 +19,6 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Clock,
   Beaker
 } from 'lucide-react';
 import Link from 'next/link';
@@ -29,8 +27,7 @@ import { db } from '@/lib/firebase';
 import { 
   getSampleRequirementsForTests, 
   getSampleTypeName, 
-  getContainerTypeName,
-  validateSampleQuality 
+  getContainerTypeName
 } from '@/lib/sample-mapping';
 
 interface PendingSample extends Omit<TestRequest, 'tests'> {
@@ -226,7 +223,6 @@ export default function SampleCollectionPage() {
       setSaving(true);
 
       // Determine overall quality status
-      const collectedSamples = samples.filter(s => s.status === 'COLLECTED');
       const rejectedSamples = samples.filter(s => s.status === 'REJECTED' || s.status === 'INSUFFICIENT' || s.status === 'CONTAMINATED' || s.status === 'HEMOLYZED' || s.status === 'CLOTTED');
       
       let overallQualityStatus: 'PASSED' | 'PARTIAL' | 'FAILED' = 'PASSED';

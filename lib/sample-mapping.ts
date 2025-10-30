@@ -1,4 +1,4 @@
-import { Test, SampleType, ContainerType } from '@/types';
+import { SampleType, ContainerType } from '@/types';
 
 /**
  * Sample Mapping Utility
@@ -270,8 +270,7 @@ export function getContainerTypeName(containerType: ContainerType): string {
  */
 export function validateSampleQuality(
   testCode: string,
-  sampleStatus: string,
-  volumeCollected?: string
+  sampleStatus: string
 ): {
   isValid: boolean;
   issues: string[];
