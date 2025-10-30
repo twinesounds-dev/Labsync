@@ -4,7 +4,7 @@
  * with Uganda-specific disease patterns and medical guidelines
  */
 
-import { TestResult, ResultValue, Patient, ClinicalInterpretationTemplate } from '@/types';
+import { TestResult, Patient, ClinicalInterpretationTemplate } from '@/types';
 import { getNormalRangeForParameter } from './clinical-ranges';
 
 /**
@@ -442,8 +442,7 @@ export function flagResultValue(
   testCode: string,
   parameter: string,
   value: string | number,
-  gender: 'Male' | 'Female',
-  age?: number
+  gender: 'Male' | 'Female'
 ): FlagResult {
   const normalRange = getNormalRangeForParameter(testCode, parameter);
 
@@ -573,7 +572,7 @@ export function flagResultValue(
  */
 export function generateClinicalInterpretation(
   testResult: TestResult,
-  patient: Patient
+  _patient: Patient
 ): {
   autoInterpretation: string;
   abnormalFindings: string[];

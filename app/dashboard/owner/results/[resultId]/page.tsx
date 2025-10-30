@@ -10,7 +10,7 @@ import { ArrowLeft, CheckCircle, XCircle, FileText, AlertTriangle, Sparkles } fr
 import Link from 'next/link';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
 import { TestResult, TestRequest } from '@/types';
-import { generateClinicalInterpretation, getInterpretationSummary } from '@/lib/clinical-interpretation';
+import { generateClinicalInterpretation } from '@/lib/clinical-interpretation';
 
 export default function OwnerResultDetailPage() {
   // const router = useRouter();
@@ -58,10 +58,10 @@ export default function OwnerResultDetailPage() {
         }
         
         // Load existing interpretations if available
-        if (resultData.ownerInterpretation) {
+        if (resultData?.ownerInterpretation) {
           setOwnerInterpretation(resultData.ownerInterpretation);
         }
-        if (resultData.clinicalNotes) {
+        if (resultData?.clinicalNotes) {
           setClinicalNotes(resultData.clinicalNotes);
         }
       } catch (error) {
@@ -153,10 +153,6 @@ export default function OwnerResultDetailPage() {
   const hasAbnormalValues = result?.resultValues?.some(value => 
     value.flag === 'High' || value.flag === 'Low' || value.flag === 'Critical' || 
     value.flag === 'Critical High' || value.flag === 'Critical Low'
-  );
-  
-  const hasCriticalValues = result?.resultValues?.some(value => 
-    value.flag === 'Critical' || value.flag === 'Critical High' || value.flag === 'Critical Low'
   );
   
   const addRecommendation = () => {

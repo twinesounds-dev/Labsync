@@ -19,14 +19,12 @@ import {
   Search
 } from 'lucide-react';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
-import { TestNormalRange, Test, TestCategory } from '@/types';
+import { TestNormalRange, Test } from '@/types';
 import { ALL_NORMAL_RANGES } from '@/lib/clinical-ranges';
 
 export default function ClinicalRangesSettingsPage() {
-  const { userProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [tests, setTests] = useState<Test[]>([]);
-  const [categories, setCategories] = useState<TestCategory[]>([]);
   const [normalRanges, setNormalRanges] = useState<TestNormalRange[]>([]);
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
   const [editingRange, setEditingRange] = useState<TestNormalRange | null>(null);
@@ -37,10 +35,6 @@ export default function ClinicalRangesSettingsPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load test categories
-        const categoriesData = await firestoreService.getAll<TestCategory>(COLLECTIONS.TEST_CATEGORIES);
-        setCategories(categoriesData);
-
         // Load tests
         const testsData = await firestoreService.getAll<Test>(COLLECTIONS.TESTS);
         setTests(testsData.filter(t => t.isActive));
