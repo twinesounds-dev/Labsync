@@ -284,3 +284,193 @@ export interface FacilityStats {
   patientsWaitingForSamples: number;
   patientsWaitingForReports: number;
 }
+
+// Financial Management
+export interface DailyIncome {
+  id: string;
+  facilityId: string;
+  date: string; // YYYY-MM-DD
+  cash: number;
+  mobileMoney: {
+    mtn: number;
+    airtel: number;
+  };
+  insurance: number;
+  card: number;
+  total: number;
+  transactionCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Expenditure {
+  id: string;
+  facilityId: string;
+  category: 'consumables' | 'salaries' | 'utilities' | 'maintenance' | 'rent' | 'equipment' | 'marketing' | 'other';
+  amount: number;
+  description: string;
+  date: Date;
+  approvedBy?: string; // User ID (Owner)
+  receipt?: string; // Storage URL
+  createdBy: string; // User ID
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FinancialSummary {
+  facilityId: string;
+  period: string; // YYYY-MM or YYYY-MM-DD
+  grossIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  taxAmount: number; // Calculated based on Uganda tax rules
+  breakdown: {
+    cash: number;
+    mobileMoney: number;
+    insurance: number;
+    card: number;
+  };
+  expensesByCategory: Record<string, number>;
+}
+
+// Inventory & Consumables
+export interface InventoryItem {
+  id: string;
+  facilityId: string;
+  name: string;
+  category: 'test_kits' | 'sample_containers' | 'safety_equipment' | 'reagents' | 'disposables' | 'other';
+  description?: string;
+  currentStock: number;
+  minimumStock: number;
+  unit: string; // "strips", "pairs", "tubes", "ml", "units"
+  costPerUnit: number;
+  supplier?: string;
+  lastRestockDate?: Date;
+  expiryDate?: Date;
+  testsUsing: string[]; // Test IDs that use this consumable
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ConsumableUsage {
+  id: string;
+  facilityId: string;
+  inventoryItemId: string;
+  inventoryItem?: InventoryItem;
+  testResultId?: string; // If used during test
+  testRequestId?: string; // If used during sample collection
+  quantity: number;
+  usedBy: string; // User ID
+  usedByUser?: User;
+  usageType: 'test' | 'sample_collection' | 'quality_control' | 'other';
+  notes?: string;
+  date: Date;
+  createdAt: Date;
+}
+
+export interface StockAlert {
+  id: string;
+  facilityId: string;
+  inventoryItemId: string;
+  inventoryItem?: InventoryItem;
+  alertType: 'low_stock' | 'out_of_stock' | 'expiring_soon' | 'expired';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  acknowledged: boolean;
+  acknowledgedBy?: string;
+  acknowledgedAt?: Date;
+  createdAt: Date;
+}
+
+// Human Resources & Attendance
+export interface Employee {
+  id: string;
+  userId: string; // References User table
+  user?: User;
+  facilityId: string;
+  employeeNumber: string;
+  position: string;
+  department: string;
+  salary: number;
+  hireDate: Date;
+  contractType: 'permanent' | 'contract' | 'temporary';
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  facilityId: string;
+  date: string; // YYYY-MM-DD
+  checkIn?: Date;
+  checkOut?: Date;
+  hoursWorked: number;
+  status: 'present' | 'absent' | 'late' | 'on_leave' | 'half_day';
+  notes?: string;
+  ipAddress?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employeeId: string;
+  employee?: Employee;
+  facilityId: string;
+  leaveType: 'annual' | 'sick' | 'maternity' | 'paternity' | 'compassionate' | 'unpaid';
+  startDate: Date;
+  endDate: Date;
+  days: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  appliedDate: Date;
+  reviewedBy?: string; // User ID (Owner)
+  reviewedAt?: Date;
+  reviewNotes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PerformanceMetrics {
+  id: string;
+  employeeId: string;
+  facilityId: string;
+  period: string; // YYYY-MM
+  testsProcessed: number;
+  averageProcessingTime: number; // minutes
+  qualityScore: number; // 0-100
+  attendanceRate: number; // percentage
+  customerFeedback: number; // 0-5 stars
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Facility Configuration
+export interface FacilityConfiguration {
+  id: string;
+  facilityId: string;
+  defaultTests: string[]; // Test IDs that are available at this facility
+  operatingHours: {
+    monday: { open: string; close: string; isOpen: boolean };
+    tuesday: { open: string; close: string; isOpen: boolean };
+    wednesday: { open: string; close: string; isOpen: boolean };
+    thursday: { open: string; close: string; isOpen: boolean };
+    friday: { open: string; close: string; isOpen: boolean };
+    saturday: { open: string; close: string; isOpen: boolean };
+    sunday: { open: string; close: string; isOpen: boolean };
+  };
+  taxRate: number; // Percentage
+  enabledPaymentMethods: string[];
+  notificationSettings: {
+    lowStockAlerts: boolean;
+    attendanceReminders: boolean;
+    pendingApprovals: boolean;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
