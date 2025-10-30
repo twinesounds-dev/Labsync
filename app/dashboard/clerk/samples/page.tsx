@@ -176,8 +176,12 @@ function SampleTrackingContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending':
+      case 'AwaitingPayment':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'SampleReceived':
+      case 'ReadyForCollection':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'SampleCollected':
+      case 'InLab':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'InProgress':
         return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -193,8 +197,11 @@ function SampleTrackingContent() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Pending':
+      case 'AwaitingPayment':
         return <Clock className="w-4 h-4" />;
-      case 'SampleReceived':
+      case 'ReadyForCollection':
+      case 'SampleCollected':
+      case 'InLab':
         return <TestTube className="w-4 h-4" />;
       case 'InProgress':
         return <AlertTriangle className="w-4 h-4" />;
