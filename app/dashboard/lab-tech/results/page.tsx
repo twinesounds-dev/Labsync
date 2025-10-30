@@ -33,12 +33,16 @@ export default function LabResultsPage() {
     );
 
     const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
-      const requestsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        requestDate: doc.data().requestDate?.toDate() || new Date(),
-        sampleReceivedDate: doc.data().sampleReceivedDate?.toDate() || null,
-      })) as TestRequest[];
+      const requestsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          requestDate: data.requestDate?.toDate?.() || new Date(),
+          sampleReceivedDate: data.sampleReceivedDate?.toDate?.() || null,
+          tests: Array.isArray(data.tests) ? data.tests : [],
+        } as TestRequest;
+      });
 
       setRequests(requestsData);
       setLoading(false);
@@ -152,12 +156,16 @@ export default function LabResultsPage() {
                     <div className="mb-4">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Tests Requested:</h4>
                       <div className="flex flex-wrap gap-2">
-                        {request.tests?.map((test, index) => (
-                          <div key={index} className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-800">{test.test?.name || `Test ${index + 1}`}</span>
-                            {getStatusBadge(test.status)}
-                          </div>
-                        ))}
+                        {Array.isArray(request.tests) && request.tests.length > 0 ? (
+                          request.tests.map((test, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-800">{test.test?.name || `Test ${index + 1}`}</span>
+                              {getStatusBadge(test.status)}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-sm text-gray-500">No tests</span>
+                        )}
                       </div>
                     </div>
 

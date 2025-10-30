@@ -229,7 +229,7 @@ export default function OwnerDashboard() {
               </div>
             </button>
 
-            {facilities.map((facility) => (
+            {Array.isArray(facilities) && facilities.map((facility) => (
               <button
                 key={facility.id}
                 onClick={() => setSelectedFacilityId(facility.id)}
@@ -333,32 +333,32 @@ export default function OwnerDashboard() {
 
             {/* Quick Action Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('financial')}>
-                <div className="text-center py-4">
+              <Card className="hover:shadow-lg transition-shadow">
+                <div className="text-center py-4 cursor-pointer" onClick={() => setActiveTab('financial')}>
                   <DollarSign className="w-10 h-10 mx-auto mb-2 text-green-600" />
                   <h3 className="font-semibold">Financial Management</h3>
                   <p className="text-sm text-gray-600 mt-1">Income & expenses</p>
                 </div>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('inventory')}>
-                <div className="text-center py-4">
+              <Card className="hover:shadow-lg transition-shadow">
+                <div className="text-center py-4 cursor-pointer" onClick={() => setActiveTab('inventory')}>
                   <Package className="w-10 h-10 mx-auto mb-2 text-blue-600" />
                   <h3 className="font-semibold">Inventory Control</h3>
                   <p className="text-sm text-gray-600 mt-1">{stats.lowStockItems} alerts</p>
                 </div>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('hr')}>
-                <div className="text-center py-4">
+              <Card className="hover:shadow-lg transition-shadow">
+                <div className="text-center py-4 cursor-pointer" onClick={() => setActiveTab('hr')}>
                   <Calendar className="w-10 h-10 mx-auto mb-2 text-purple-600" />
                   <h3 className="font-semibold">HR & Attendance</h3>
                   <p className="text-sm text-gray-600 mt-1">{stats.activeStaff} active staff</p>
                 </div>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('analytics')}>
-                <div className="text-center py-4">
+              <Card className="hover:shadow-lg transition-shadow">
+                <div className="text-center py-4 cursor-pointer" onClick={() => setActiveTab('analytics')}>
                   <TrendingUp className="w-10 h-10 mx-auto mb-2 text-teal-600" />
                   <h3 className="font-semibold">Analytics</h3>
                   <p className="text-sm text-gray-600 mt-1">View reports</p>
@@ -370,7 +370,7 @@ export default function OwnerDashboard() {
             {selectedFacilityId === 'all' && (
               <Card title="Facility Performance Comparison" className="mt-6">
                 <div className="space-y-4">
-                  {facilities.map((facility) => (
+                  {Array.isArray(facilities) && facilities.map((facility) => (
                     <div
                       key={facility.id}
                       className="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors cursor-pointer"

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
-import { TestTube, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { TestTube, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import Link from 'next/link';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firestore';
 
@@ -17,6 +17,7 @@ export default function ClerkDashboard() {
     samplesProcessedToday: 0,
     testsPending: 0,
     sampleRejections: 0,
+    walkInPatientsWaiting: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -28,15 +29,14 @@ export default function ClerkDashboard() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayTimestamp = Timestamp.fromDate(today);
 
-    // Subscribe to test requests
+    // Subscribe to test requests - simplified query
     const requestsQuery = query(
       collection(db, COLLECTIONS.TEST_REQUESTS),
       where('facilityId', '==', userProfile.facilityId)
     );
 
-    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+    const unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
       let samplesAwaiting = 0;
       let samplesProcessedToday = 0;
       let testsPending = 0;
@@ -50,8 +50,11 @@ export default function ClerkDashboard() {
         }
 
         // Samples processed today
-        if (data.sampleReceivedDate && data.sampleReceivedDate >= todayTimestamp) {
-          samplesProcessedToday++;
+        if (data.sampleReceivedDate) {
+          const receivedDate = data.sampleReceivedDate?.toDate ? data.sampleReceivedDate.toDate() : new Date(data.sampleReceivedDate);
+          if (receivedDate >= today) {
+            samplesProcessedToday++;
+          }
         }
 
         // Tests pending (payment confirmed but samples not yet received)
@@ -60,16 +63,33 @@ export default function ClerkDashboard() {
         }
       });
 
-      setStats({
+      setStats((prev) => ({
+        ...prev,
         samplesAwaiting,
         samplesProcessedToday,
         testsPending,
         sampleRejections: 0, // Can be tracked separately if needed
-      });
+      }));
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Subscribe to walk-in patients waiting for lab request - simplified
+    const patientsQuery = query(
+      collection(db, COLLECTIONS.PATIENTS),
+      where('facilityId', '==', userProfile.facilityId),
+      where('requiresClerkRequest', '==', true)
+    );
+
+    const unsubscribePatients = onSnapshot(patientsQuery, async (snapshot) => {
+      // Count walk-in patients - simplified approach
+      const walkInWaiting = snapshot.size;
+      setStats((prev) => ({ ...prev, walkInPatientsWaiting: walkInWaiting }));
+    });
+
+    return () => {
+      unsubscribeRequests();
+      unsubscribePatients();
+    };
   }, [userProfile?.facilityId]);
 
   if (loading) {
@@ -89,67 +109,108 @@ export default function ClerkDashboard() {
           Clerk Dashboard
         </h1>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-600 font-medium">
-                  Samples Awaiting Reception
-                </p>
-                <p className="text-3xl font-bold text-blue-900 mt-1">
-                  {stats.samplesAwaiting}
-                </p>
+        {/* Stats Grid - All Interactive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Link href="/dashboard/clerk/walk-in-patients">
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-orange-600 font-medium">
+                    Walk-ins Waiting
+                  </p>
+                  <p className="text-3xl font-bold text-orange-900 mt-1">
+                    {stats.walkInPatientsWaiting}
+                  </p>
+                  <p className="text-xs text-orange-600 mt-1">Click to create lab requests</p>
+                </div>
+                <Users className="w-12 h-12 text-orange-500 opacity-50" />
               </div>
-              <TestTube className="w-12 h-12 text-blue-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 font-medium">
-                  Processed Today
-                </p>
-                <p className="text-3xl font-bold text-green-900 mt-1">
-                  {stats.samplesProcessedToday}
-                </p>
+          <Link href="/dashboard/clerk/sample-collection">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">
+                    Samples Awaiting
+                  </p>
+                  <p className="text-3xl font-bold text-blue-900 mt-1">
+                    {stats.samplesAwaiting}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">Click to collect samples</p>
+                </div>
+                <TestTube className="w-12 h-12 text-blue-500 opacity-50" />
               </div>
-              <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-purple-600 font-medium">
-                  Tests Pending
-                </p>
-                <p className="text-3xl font-bold text-purple-900 mt-1">
-                  {stats.testsPending}
-                </p>
+          <Link href="/dashboard/clerk/samples?filter=today">
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600 font-medium">
+                    Processed Today
+                  </p>
+                  <p className="text-3xl font-bold text-green-900 mt-1">
+                    {stats.samplesProcessedToday}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">Click to view details</p>
+                </div>
+                <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
               </div>
-              <Clock className="w-12 h-12 text-purple-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-red-600 font-medium">
-                  Sample Rejections
-                </p>
-                <p className="text-3xl font-bold text-red-900 mt-1">
-                  {stats.sampleRejections}
-                </p>
+          <Link href="/dashboard/clerk/sample-collection?view=pending">
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600 font-medium">
+                    Tests Pending
+                  </p>
+                  <p className="text-3xl font-bold text-purple-900 mt-1">
+                    {stats.testsPending}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">Click to view queue</p>
+                </div>
+                <Clock className="w-12 h-12 text-purple-500 opacity-50" />
               </div>
-              <AlertCircle className="w-12 h-12 text-red-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/clerk/samples?filter=rejected">
+            <Card className="bg-gradient-to-br from-red-50 to-red-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-600 font-medium">
+                    Sample Rejections
+                  </p>
+                  <p className="text-3xl font-bold text-red-900 mt-1">
+                    {stats.sampleRejections}
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">Click to view rejected</p>
+                </div>
+                <AlertCircle className="w-12 h-12 text-red-500 opacity-50" />
+              </div>
+            </Card>
+          </Link>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Link href="/dashboard/clerk/walk-in-patients">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-orange-600 text-white">
+              <div className="text-center py-6">
+                <Users className="w-12 h-12 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold">Walk-in Patients</h3>
+                <p className="text-sm opacity-90 mt-1">
+                  Create lab requests ({stats.walkInPatientsWaiting} waiting)
+                </p>
+              </div>
+            </Card>
+          </Link>
+
           <Link href="/dashboard/clerk/forms">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
               <div className="text-center py-6">
@@ -168,7 +229,7 @@ export default function ClerkDashboard() {
                 <TestTube className="w-12 h-12 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold">Sample Collection</h3>
                 <p className="text-sm opacity-90 mt-1">
-                  Collect & QA samples
+                  Collect & QA samples ({stats.samplesAwaiting} ready)
                 </p>
               </div>
             </Card>

@@ -55,14 +55,17 @@ export default function PatientTrackingPage() {
     );
 
     const unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
-      const requestsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        requestDate: doc.data().requestDate?.toDate() || new Date(),
-        sampleReceivedDate: doc.data().sampleReceivedDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as TestRequest[];
+      const requestsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          requestDate: data.requestDate?.toDate?.() || new Date(),
+          sampleReceivedDate: data.sampleReceivedDate?.toDate?.(),
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        };
+      }) as TestRequest[];
 
       setRequests(requestsData);
     });
@@ -75,13 +78,16 @@ export default function PatientTrackingPage() {
     );
 
     const unsubscribeResults = onSnapshot(resultsQuery, (snapshot) => {
-      const resultsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        datePerformed: doc.data().datePerformed?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as TestResult[];
+      const resultsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          datePerformed: data.datePerformed?.toDate?.() || new Date(),
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        };
+      }) as TestResult[];
 
       // Group results by request ID
       const groupedResults: { [requestId: string]: TestResult[] } = {};

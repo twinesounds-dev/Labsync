@@ -34,6 +34,7 @@ export interface User {
 export interface Patient {
   id: string;
   patientId: string; // FacilityCode-PatientNumber: FLNT-00123
+  patientType: 'walk-in' | 'referral' | 'inpatient'; // Patient type for workflow
   facilityId: string;
   facility?: Facility;
   registrationDate: Date;
@@ -77,13 +78,21 @@ export interface Patient {
   externalRequestForm?: string; // Storage URL
   
   // Pathway-specific fields
-  // For Pathway 1 (Referred patients)
+  // For Referral patients (has lab request form from doctor)
   requestFormNumber?: string;
   requestingPhysician?: string;
   clinicalDiagnosis?: string;
   requestedTests?: string;
   
-  // For Pathway 2 (Inpatients)
+  // For Inpatients (can be referred between facilities)
+  originFacilityId?: string; // If referred from another facility
+  referredFromFacility?: string; // Facility name
+  referredToFacilityId?: string; // If referred to another facility
+  referralReason?: string; // Why referred (e.g., tests not available)
+  
+  // For Walk-in patients (clerk creates lab request first)
+  requiresClerkRequest: boolean; // True for walk-in patients
+  
   labRequestForm?: {
     requestNumber: string;
     requestDate: Date;
