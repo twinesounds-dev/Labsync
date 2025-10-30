@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, Timestamp, addDoc, updateDoc, doc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, updateDoc, doc, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firestore';
 import Card from '@/components/ui/Card';
-import { Users, Calendar, Clock, CheckCircle, XCircle, AlertCircle, TrendingUp, UserCheck } from 'lucide-react';
+import { Users, Calendar, CheckCircle, XCircle, AlertCircle, TrendingUp, UserCheck } from 'lucide-react';
 import { Employee, AttendanceRecord, LeaveRequest, User } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 
@@ -164,7 +164,7 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
     return 'Unknown';
   };
 
-  const formatDate = (date: any) => {
+  const formatDate = (date: Timestamp | Date | string | unknown) => {
     if (date instanceof Timestamp) {
       return date.toDate().toLocaleDateString();
     }
@@ -174,7 +174,7 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
     return new Date(date).toLocaleDateString();
   };
 
-  const formatTime = (date: any) => {
+  const formatTime = (date: Timestamp | Date | string | unknown) => {
     if (date instanceof Timestamp) {
       return date.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
@@ -184,7 +184,7 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
     return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const calculateHours = (checkIn: any, checkOut: any) => {
+  const calculateHours = (checkIn: Timestamp | Date | string | unknown, checkOut: Timestamp | Date | string | unknown) => {
     if (!checkIn || !checkOut) return 0;
     
     const start = checkIn instanceof Timestamp ? checkIn.toDate() : new Date(checkIn);
@@ -308,10 +308,10 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
                           </p>
                         </div>
                       </div>
-                      {record.checkIn && record.checkOut && (
+                      {record.checkIn && record.checkOut && record.hoursWorked && (
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">
-                            {calculateHours(record.checkIn, record.checkOut)} hrs
+                            {record.hoursWorked.toFixed(1)} hrs
                           </p>
                         </div>
                       )}

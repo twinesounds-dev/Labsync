@@ -12,11 +12,8 @@ import {
   AlertTriangle,
   TrendingUp,
   Calendar,
-  FileText,
-  Settings,
   PlusCircle,
   CheckCircle2,
-  Clock,
 } from 'lucide-react';
 import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

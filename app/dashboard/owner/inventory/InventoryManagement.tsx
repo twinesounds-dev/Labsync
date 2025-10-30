@@ -5,8 +5,8 @@ import { collection, query, where, onSnapshot, Timestamp, addDoc, updateDoc, doc
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firestore';
 import Card from '@/components/ui/Card';
-import { Package, AlertTriangle, PlusCircle, TrendingDown, Edit, RefreshCw, Search } from 'lucide-react';
-import { InventoryItem, StockAlert, ConsumableUsage } from '@/types';
+import { Package, AlertTriangle, PlusCircle, TrendingDown, RefreshCw, Search } from 'lucide-react';
+import { InventoryItem, StockAlert } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 
 interface InventoryManagementProps {
@@ -17,7 +17,6 @@ export default function InventoryManagement({ facilityId }: InventoryManagementP
   const { userProfile } = useAuth();
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([]);
-  const [recentUsage, setRecentUsage] = useState<ConsumableUsage[]>([]);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -111,26 +110,6 @@ export default function InventoryManagement({ facilityId }: InventoryManagementP
       setStockAlerts(alerts);
     });
     unsubscribers.push(unsubAlerts);
-
-    // Subscribe to recent consumable usage
-    const usageQueryConstraints = [
-      ...(facilityId !== 'all' ? [where('facilityId', '==', facilityId)] : []),
-      orderBy('date', 'desc'),
-    ];
-
-    const usageQuery = query(
-      collection(db, COLLECTIONS.CONSUMABLE_USAGE),
-      ...usageQueryConstraints
-    );
-
-    const unsubUsage = onSnapshot(usageQuery, (snapshot) => {
-      const usage = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ConsumableUsage[];
-      setRecentUsage(usage.slice(0, 20));
-    });
-    unsubscribers.push(unsubUsage);
 
     return () => {
       unsubscribers.forEach((unsub) => unsub());

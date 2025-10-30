@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, onSnapshot, Timestamp, addDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firestore';
 import Card from '@/components/ui/Card';
 import { DollarSign, TrendingUp, TrendingDown, PlusCircle, Receipt, Calendar, Wallet, CreditCard, Smartphone } from 'lucide-react';
-import { DailyIncome, Expenditure } from '@/types';
+import { Expenditure } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 
 interface FinancialManagementProps {
@@ -15,7 +15,6 @@ interface FinancialManagementProps {
 
 export default function FinancialManagement({ facilityId }: FinancialManagementProps) {
   const { userProfile } = useAuth();
-  const [view, setView] = useState<'dashboard' | 'income' | 'expenses'>('dashboard');
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'year'>('today');
   
   const [financialData, setFinancialData] = useState({
@@ -28,10 +27,9 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
     cardIncome: 0,
   });
 
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Array<{ id: string; [key: string]: unknown }>>([]);
   const [expenses, setExpenses] = useState<Expenditure[]>([]);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
-  const [showAddIncomeModal, setShowAddIncomeModal] = useState(false);
 
   // New expense form state
   const [newExpense, setNewExpense] = useState({
@@ -41,9 +39,9 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
     date: new Date().toISOString().split('T')[0],
   });
 
-  const getPeriodQuery = () => {
+  const getPeriodQuery = useCallback(() => {
     const now = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
 
     switch (selectedPeriod) {
       case 'today':
@@ -61,7 +59,7 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
     }
 
     return Timestamp.fromDate(startDate);
-  };
+  }, [selectedPeriod]);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -161,7 +159,7 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [userProfile, facilityId, selectedPeriod]);
+  }, [userProfile, facilityId, selectedPeriod, getPeriodQuery]);
 
   const handleAddExpense = async () => {
     if (!userProfile || facilityId === 'all') return;
@@ -194,7 +192,7 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
     return `UGX ${amount.toLocaleString('en-UG')}`;
   };
 
-  const formatDate = (date: any) => {
+  const formatDate = (date: Timestamp | Date | string | unknown) => {
     if (date instanceof Timestamp) {
       return date.toDate().toLocaleDateString();
     }

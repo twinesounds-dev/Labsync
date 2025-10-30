@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firestore';
 import Card from '@/components/ui/Card';
-import { BarChart, TrendingUp, DollarSign, Users, Package, Download, Calendar } from 'lucide-react';
+import { TrendingUp, DollarSign, Users, Package, Download } from 'lucide-react';
 import { Facility } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 
@@ -32,9 +32,9 @@ export default function AnalyticsOverview({ facilityId, facilities }: AnalyticsO
   const [facilityMetrics, setFacilityMetrics] = useState<FacilityMetrics[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getPeriodStart = () => {
+  const getPeriodStart = useCallback(() => {
     const now = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
 
     switch (selectedPeriod) {
       case 'week':
@@ -52,7 +52,7 @@ export default function AnalyticsOverview({ facilityId, facilities }: AnalyticsO
     }
 
     return Timestamp.fromDate(startDate);
-  };
+  }, [selectedPeriod]);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -201,7 +201,7 @@ export default function AnalyticsOverview({ facilityId, facilities }: AnalyticsO
     });
 
     setLoading(false);
-  }, [userProfile, facilityId, facilities, selectedPeriod]);
+  }, [userProfile, facilityId, facilities, selectedPeriod, getPeriodStart]);
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
