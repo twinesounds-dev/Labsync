@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
@@ -31,7 +32,8 @@ interface SampleWithDetails extends Omit<TestRequest, 'tests'> {
   tests?: Test[];
 }
 
-export default function SampleTrackingPage() {
+function SampleTrackingContent() {
+  const searchParams = useSearchParams();
   const { userProfile } = useAuth();
   const [samples, setSamples] = useState<SampleWithDetails[]>([]);
   const [filteredSamples, setFilteredSamples] = useState<SampleWithDetails[]>([]);
@@ -39,6 +41,17 @@ export default function SampleTrackingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('today');
+
+  // Handle URL parameters for filters
+  useEffect(() => {
+    const filter = searchParams.get('filter');
+    if (filter === 'today') {
+      setDateFilter('today');
+      setStatusFilter('all');
+    } else if (filter === 'rejected') {
+      setStatusFilter('rejected');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!userProfile?.facilityId) {
@@ -116,7 +129,14 @@ export default function SampleTrackingPage() {
 
     // Apply status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(sample => sample.overallStatus === statusFilter);
+      if (statusFilter === 'rejected') {
+        // Filter for rejected samples (sample quality rejected)
+        filtered = filtered.filter(sample => 
+          sample.sampleCollectionData?.sampleQuality === 'Rejected'
+        );
+      } else {
+        filtered = filtered.filter(sample => sample.overallStatus === statusFilter);
+      }
     }
 
     // Apply date filter
@@ -246,6 +266,7 @@ export default function SampleTrackingPage() {
                 { value: 'InProgress', label: 'In Progress' },
                 { value: 'Completed', label: 'Completed' },
                 { value: 'Approved', label: 'Approved' },
+                { value: 'rejected', label: 'Rejected Samples' },
               ]}
             />
             <Select
@@ -423,5 +444,19 @@ export default function SampleTrackingPage() {
         </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function SampleTrackingPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </DashboardLayout>
+    }>
+      <SampleTrackingContent />
+    </Suspense>
   );
 }

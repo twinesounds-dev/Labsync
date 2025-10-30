@@ -109,79 +109,92 @@ export default function ClerkDashboard() {
           Clerk Dashboard
         </h1>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - All Interactive */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-orange-600 font-medium">
-                  Walk-ins Waiting
-                </p>
-                <p className="text-3xl font-bold text-orange-900 mt-1">
-                  {stats.walkInPatientsWaiting}
-                </p>
-                <p className="text-xs text-orange-600 mt-1">Need lab request</p>
+          <Link href="/dashboard/clerk/walk-in-patients">
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-orange-600 font-medium">
+                    Walk-ins Waiting
+                  </p>
+                  <p className="text-3xl font-bold text-orange-900 mt-1">
+                    {stats.walkInPatientsWaiting}
+                  </p>
+                  <p className="text-xs text-orange-600 mt-1">Click to create lab requests</p>
+                </div>
+                <Users className="w-12 h-12 text-orange-500 opacity-50" />
               </div>
-              <Users className="w-12 h-12 text-orange-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-600 font-medium">
-                  Samples Awaiting
-                </p>
-                <p className="text-3xl font-bold text-blue-900 mt-1">
-                  {stats.samplesAwaiting}
-                </p>
-                <p className="text-xs text-blue-600 mt-1">Paid patients</p>
+          <Link href="/dashboard/clerk/sample-collection">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">
+                    Samples Awaiting
+                  </p>
+                  <p className="text-3xl font-bold text-blue-900 mt-1">
+                    {stats.samplesAwaiting}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">Click to collect samples</p>
+                </div>
+                <TestTube className="w-12 h-12 text-blue-500 opacity-50" />
               </div>
-              <TestTube className="w-12 h-12 text-blue-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 font-medium">
-                  Processed Today
-                </p>
-                <p className="text-3xl font-bold text-green-900 mt-1">
-                  {stats.samplesProcessedToday}
-                </p>
+          <Link href="/dashboard/clerk/samples?filter=today">
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600 font-medium">
+                    Processed Today
+                  </p>
+                  <p className="text-3xl font-bold text-green-900 mt-1">
+                    {stats.samplesProcessedToday}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">Click to view details</p>
+                </div>
+                <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
               </div>
-              <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-purple-600 font-medium">
-                  Tests Pending
-                </p>
-                <p className="text-3xl font-bold text-purple-900 mt-1">
-                  {stats.testsPending}
-                </p>
+          <Link href="/dashboard/clerk/sample-collection?view=pending">
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600 font-medium">
+                    Tests Pending
+                  </p>
+                  <p className="text-3xl font-bold text-purple-900 mt-1">
+                    {stats.testsPending}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">Click to view queue</p>
+                </div>
+                <Clock className="w-12 h-12 text-purple-500 opacity-50" />
               </div>
-              <Clock className="w-12 h-12 text-purple-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 border-none">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-red-600 font-medium">
-                  Sample Rejections
-                </p>
-                <p className="text-3xl font-bold text-red-900 mt-1">
-                  {stats.sampleRejections}
-                </p>
+          <Link href="/dashboard/clerk/samples?filter=rejected">
+            <Card className="bg-gradient-to-br from-red-50 to-red-100 border-none cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-600 font-medium">
+                    Sample Rejections
+                  </p>
+                  <p className="text-3xl font-bold text-red-900 mt-1">
+                    {stats.sampleRejections}
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">Click to view rejected</p>
+                </div>
+                <AlertCircle className="w-12 h-12 text-red-500 opacity-50" />
               </div>
-              <AlertCircle className="w-12 h-12 text-red-500 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </Link>
         </div>
 
         {/* Quick Actions */}
