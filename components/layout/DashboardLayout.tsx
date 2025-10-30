@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -15,7 +15,9 @@ import {
   FileText,
   ClipboardList,
   FlaskConical,
+  Clock,
 } from 'lucide-react';
+import CheckInOut from '@/components/attendance/CheckInOut';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,6 +27,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, userProfile, loading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [showCheckIn, setShowCheckIn] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -140,6 +143,43 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <div className="ml-64">
+        {/* Quick Access Bar */}
+        <div className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">Quick Access:</span>
+            <button
+              onClick={() => setShowCheckIn(!showCheckIn)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Check In/Out
+            </button>
+          </div>
+          <div className="text-sm text-gray-600">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        </div>
+
+        {/* Check In/Out Modal */}
+        {showCheckIn && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ml-64">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Attendance</h2>
+                <button
+                  onClick={() => setShowCheckIn(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <CheckInOut />
+            </div>
+          </div>
+        )}
+
         <main className="p-8">{children}</main>
       </div>
     </div>

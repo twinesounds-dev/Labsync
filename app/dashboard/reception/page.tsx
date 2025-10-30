@@ -77,23 +77,36 @@ export default function ReceptionDashboard() {
         {/* Patient Registration Pathways */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Patient Registration</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <Link href="/dashboard/reception/patients/new?pathway=referred">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <Link href="/dashboard/reception/patients/new?type=referral">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
                 <div className="text-center py-6">
                   <FileText className="w-12 h-12 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold">Pathway 1: Referred Patient</h3>
-                  <p className="text-sm opacity-90 mt-1">Patient with lab request form & clinical notes</p>
+                  <h3 className="text-lg font-semibold">Referral Patient</h3>
+                  <p className="text-sm opacity-90 mt-1">Has lab request form & clinical notes from doctor</p>
+                  <p className="text-xs opacity-75 mt-2">Reception → Test Selection → Payment → Clerk Sample Collection</p>
                 </div>
               </Card>
             </Link>
             
-            <Link href="/dashboard/reception/patients/new?pathway=inpatient">
+            <Link href="/dashboard/reception/patients/new?type=walk-in">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-green-600 text-white">
+                <div className="text-center py-6">
+                  <Users className="w-12 h-12 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold">Walk-in Patient</h3>
+                  <p className="text-sm opacity-90 mt-1">Needs clinical assessment & lab request</p>
+                  <p className="text-xs opacity-75 mt-2">Reception → Clerk Lab Request → Payment → Sample Collection</p>
+                </div>
+              </Card>
+            </Link>
+
+            <Link href="/dashboard/reception/patients/new?type=inpatient">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
                 <div className="text-center py-6">
                   <Users className="w-12 h-12 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold">Pathway 2: Inpatient</h3>
-                  <p className="text-sm opacity-90 mt-1">Patient without request form (biodata only)</p>
+                  <h3 className="text-lg font-semibold">Inpatient / Facility Transfer</h3>
+                  <p className="text-sm opacity-90 mt-1">From our facility or inter-facility referral</p>
+                  <p className="text-xs opacity-75 mt-2">Can be referred between facilities if tests unavailable</p>
                 </div>
               </Card>
             </Link>

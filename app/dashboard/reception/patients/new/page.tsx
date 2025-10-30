@@ -20,7 +20,7 @@ function NewPatientPageContent() {
   const { userProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [pathway, setPathway] = useState<'referred' | 'inpatient'>('referred');
+  const [patientType, setPatientType] = useState<'walk-in' | 'referral' | 'inpatient'>('referral');
   
   const [formData, setFormData] = useState({
     surname: '',
@@ -52,9 +52,9 @@ function NewPatientPageContent() {
   });
 
   useEffect(() => {
-    const pathwayParam = searchParams.get('pathway');
-    if (pathwayParam === 'inpatient' || pathwayParam === 'referred') {
-      setPathway(pathwayParam);
+    const typeParam = searchParams.get('type');
+    if (typeParam === 'walk-in' || typeParam === 'referral' || typeParam === 'inpatient') {
+      setPatientType(typeParam);
     }
   }, [searchParams]);
 
@@ -94,6 +94,7 @@ function NewPatientPageContent() {
       // Build patient data object, only including optional fields if they have values
       const patientData: Partial<Patient> = {
         patientId,
+        patientType,
         facilityId: userProfile.facilityId,
         registrationDate: new Date(),
         surname: formData.surname,
@@ -110,7 +111,8 @@ function NewPatientPageContent() {
         },
         urgency: formData.urgency as 'Routine' | 'Urgent' | 'STAT',
         paymentType: formData.paymentType as 'Cash' | 'Insurance' | 'Corporate',
-        isExternalReferral: pathway === 'referred',
+        isExternalReferral: patientType === 'referral',
+        requiresClerkRequest: patientType === 'walk-in',
         createdBy: userProfile.id,
       };
 
@@ -144,7 +146,7 @@ function NewPatientPageContent() {
       }
 
       // Add pathway-specific fields for referred patients
-      if (pathway === 'referred') {
+      if (patientType === 'referral') {
         if (formData.requestFormNumber?.trim()) {
           (patientData as Partial<Patient> & { requestFormNumber?: string }).requestFormNumber = formData.requestFormNumber.trim();
         }
@@ -164,10 +166,14 @@ function NewPatientPageContent() {
         patientData
       );
 
-      // Redirect based on pathway
-      if (pathway === 'referred') {
-        // For referred patients, go to test selection with pre-filled data
-        router.push(`/dashboard/reception/patients/${newPatientId}/tests?referred=true`);
+      // Redirect based on patient type
+      if (patientType === 'referral') {
+        // For referred patients, go to test selection (Reception enters tests + payment)
+        router.push(`/dashboard/reception/patients/${newPatientId}/tests?type=referral`);
+      } else if (patientType === 'walk-in') {
+        // For walk-in patients, send to clerk dashboard to create lab request
+        alert('Walk-in patient registered! Direct patient to Clerk for clinical assessment and lab request creation.');
+        router.push('/dashboard/reception');
       } else {
         // For inpatients, generate lab request form first
         router.push(`/dashboard/reception/patients/${newPatientId}/lab-request`);
@@ -194,15 +200,20 @@ function NewPatientPageContent() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Register New Patient</h1>
               <div className="flex items-center mt-2">
-                {pathway === 'referred' ? (
+                {patientType === 'referral' ? (
                   <>
                     <FileText className="w-5 h-5 text-primary mr-2" />
-                    <span className="text-sm text-gray-600">Pathway 1: Patient with Lab Request Form</span>
+                    <span className="text-sm text-gray-600">Referral Patient: Has lab request form from doctor</span>
+                  </>
+                ) : patientType === 'walk-in' ? (
+                  <>
+                    <Users className="w-5 h-5 text-green-600 mr-2" />
+                    <span className="text-sm text-gray-600">Walk-in Patient: Needs clerk assessment first</span>
                   </>
                 ) : (
                   <>
                     <Users className="w-5 h-5 text-secondary mr-2" />
-                    <span className="text-sm text-gray-600">Pathway 2: Inpatient (Biodata Only)</span>
+                    <span className="text-sm text-gray-600">Inpatient / Facility Transfer</span>
                   </>
                 )}
               </div>
@@ -219,7 +230,7 @@ function NewPatientPageContent() {
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             {/* Lab Request Information - Only for Referred Patients */}
-            {pathway === 'referred' && (
+            {patientType === 'referral' && (
               <Card title="Lab Request Form Information" className="border-primary/20 bg-primary/5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -491,8 +502,10 @@ function NewPatientPageContent() {
                 </Button>
               </Link>
               <Button type="submit" isLoading={loading}>
-                {pathway === 'referred' 
+                {patientType === 'referral' 
                   ? 'Register Patient & Select Tests' 
+                  : patientType === 'walk-in'
+                  ? 'Register Patient (Send to Clerk)'
                   : 'Register Patient & Generate Lab Request'
                 }
               </Button>
