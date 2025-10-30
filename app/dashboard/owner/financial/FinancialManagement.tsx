@@ -378,13 +378,13 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <div>
-                      <p className="font-medium text-gray-900">{transaction.invoiceNumber}</p>
-                      <p className="text-sm text-gray-600">{transaction.paymentMethod}</p>
+                      <p className="font-medium text-gray-900">{String(transaction.invoiceNumber)}</p>
+                      <p className="text-sm text-gray-600">{String(transaction.paymentMethod)}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-green-600">
-                      +{formatCurrency(transaction.total)}
+                      +{formatCurrency(Number(transaction.total))}
                     </p>
                     <p className="text-xs text-gray-500">{formatDate(transaction.createdAt)}</p>
                   </div>
