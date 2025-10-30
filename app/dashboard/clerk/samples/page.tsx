@@ -24,7 +24,7 @@ import {
   FileText
 } from 'lucide-react';
 import Link from 'next/link';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface SampleWithDetails extends Omit<TestRequest, 'tests'> {
@@ -40,14 +40,14 @@ function SampleTrackingContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('today');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'awaiting' | 'collected-today' | 'in-progress' | 'ready-lab'>('all');
 
   // Handle URL parameters for filters
   useEffect(() => {
     const filter = searchParams.get('filter');
     if (filter === 'today') {
-      setDateFilter('today');
-      setStatusFilter('all');
+      setQuickFilter('collected-today');
     } else if (filter === 'rejected') {
       setStatusFilter('rejected');
     }
@@ -60,10 +60,10 @@ function SampleTrackingContent() {
     }
 
     // Subscribe to test requests with real-time updates
+    // Simplified query to avoid index requirement
     const requestsQuery = query(
       collection(db, COLLECTIONS.TEST_REQUESTS),
-      where('facilityId', '==', userProfile.facilityId),
-      orderBy('requestDate', 'desc')
+      where('facilityId', '==', userProfile.facilityId)
     );
 
     const unsubscribe = onSnapshot(requestsQuery, async (snapshot) => {
@@ -109,6 +109,13 @@ function SampleTrackingContent() {
         samplesData.push(requestData);
       }
 
+      // Sort by request date in memory (newest first)
+      samplesData.sort((a, b) => {
+        const dateA = a.requestDate instanceof Date ? a.requestDate.getTime() : new Date(a.requestDate).getTime();
+        const dateB = b.requestDate instanceof Date ? b.requestDate.getTime() : new Date(b.requestDate).getTime();
+        return dateB - dateA;
+      });
+
       setSamples(samplesData);
       setLoading(false);
     });
@@ -118,6 +125,39 @@ function SampleTrackingContent() {
 
   useEffect(() => {
     let filtered = samples;
+
+    // Apply quick filter first (from stat cards)
+    if (quickFilter !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      switch (quickFilter) {
+        case 'awaiting':
+          // Paid but not yet collected
+          filtered = filtered.filter(s => 
+            s.paymentStatus === 'Paid' && !s.sampleReceivedDate
+          );
+          break;
+        case 'collected-today':
+          // Collected today
+          filtered = filtered.filter(s => {
+            const dateToCheck = s.sampleCollectionDate || s.sampleReceivedDate;
+            if (!dateToCheck) return false;
+            const collectionDate = new Date(dateToCheck);
+            collectionDate.setHours(0, 0, 0, 0);
+            return collectionDate.getTime() === today.getTime();
+          });
+          break;
+        case 'in-progress':
+          // Currently being tested
+          filtered = filtered.filter(s => s.overallStatus === 'InProgress');
+          break;
+        case 'ready-lab':
+          // Sample received, ready for lab tech
+          filtered = filtered.filter(s => s.overallStatus === 'SampleReceived');
+          break;
+      }
+    }
 
     // Apply search filter
     if (searchTerm) {
@@ -171,7 +211,7 @@ function SampleTrackingContent() {
     }
 
     setFilteredSamples(filtered);
-  }, [samples, searchTerm, statusFilter, dateFilter]);
+  }, [samples, searchTerm, statusFilter, dateFilter, quickFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -227,9 +267,23 @@ function SampleTrackingContent() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Sample Tracking</h1>
-            <p className="text-gray-600 mt-1">Monitor sample collection, processing, and status</p>
+            <p className="text-gray-600 mt-1">
+              Monitor sample collection, processing, and status
+              {quickFilter !== 'all' && (
+                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary text-white">
+                  Filter: {quickFilter === 'awaiting' ? 'Awaiting Collection' : 
+                          quickFilter === 'collected-today' ? 'Collected Today' :
+                          quickFilter === 'in-progress' ? 'In Progress' : 'Ready for Lab'}
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex space-x-2">
+            {quickFilter !== 'all' && (
+              <Button variant="outline" onClick={() => setQuickFilter('all')}>
+                Clear Filter
+              </Button>
+            )}
             <Link href="/dashboard/clerk/sample-collection">
               <Button>
                 <TestTube className="w-4 h-4 mr-2" />
@@ -290,60 +344,83 @@ function SampleTrackingContent() {
           </div>
         </Card>
 
-        {/* Sample Statistics */}
+        {/* Sample Statistics - All Interactive */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-yellow-700 font-medium">Awaiting Collection</p>
-                <p className="text-2xl font-bold text-yellow-900">
-                  {filteredSamples.filter(s => s.overallStatus === 'Pending' && s.paymentStatus === 'Paid').length}
-                </p>
+          <button onClick={() => setQuickFilter(quickFilter === 'awaiting' ? 'all' : 'awaiting')}>
+            <Card className={`bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1 ${
+              quickFilter === 'awaiting' ? 'border-yellow-500 ring-2 ring-yellow-300' : 'border-yellow-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-yellow-700 font-medium">Awaiting Collection</p>
+                  <p className="text-2xl font-bold text-yellow-900">
+                    {samples.filter(s => s.paymentStatus === 'Paid' && !s.sampleReceivedDate).length}
+                  </p>
+                  <p className="text-xs text-yellow-600 mt-1">Click to filter</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-600 opacity-50" />
               </div>
-              <Clock className="w-8 h-8 text-yellow-600 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </button>
           
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-700 font-medium">Collected Today</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {filteredSamples.filter(s => {
-                    if (!s.sampleCollectionDate) return false;
-                    const today = new Date();
-                    const collectionDate = new Date(s.sampleCollectionDate);
-                    return collectionDate.toDateString() === today.toDateString();
-                  }).length}
-                </p>
+          <button onClick={() => setQuickFilter(quickFilter === 'collected-today' ? 'all' : 'collected-today')}>
+            <Card className={`bg-gradient-to-br from-blue-50 to-blue-100 border-2 cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1 ${
+              quickFilter === 'collected-today' ? 'border-blue-500 ring-2 ring-blue-300' : 'border-blue-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-700 font-medium">Collected Today</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {samples.filter(s => {
+                      const dateToCheck = s.sampleCollectionDate || s.sampleReceivedDate;
+                      if (!dateToCheck) return false;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const collectionDate = new Date(dateToCheck);
+                      collectionDate.setHours(0, 0, 0, 0);
+                      return collectionDate.getTime() === today.getTime();
+                    }).length}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">Click to filter</p>
+                </div>
+                <TestTube className="w-8 h-8 text-blue-600 opacity-50" />
               </div>
-              <TestTube className="w-8 h-8 text-blue-600 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </button>
           
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-purple-700 font-medium">In Progress</p>
-                <p className="text-2xl font-bold text-purple-900">
-                  {filteredSamples.filter(s => s.overallStatus === 'InProgress').length}
-                </p>
+          <button onClick={() => setQuickFilter(quickFilter === 'in-progress' ? 'all' : 'in-progress')}>
+            <Card className={`bg-gradient-to-br from-purple-50 to-purple-100 border-2 cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1 ${
+              quickFilter === 'in-progress' ? 'border-purple-500 ring-2 ring-purple-300' : 'border-purple-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-700 font-medium">In Progress</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {samples.filter(s => s.overallStatus === 'InProgress').length}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">Click to filter</p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-purple-600 opacity-50" />
               </div>
-              <AlertTriangle className="w-8 h-8 text-purple-600 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </button>
           
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-700 font-medium">Ready for Lab</p>
-                <p className="text-2xl font-bold text-green-900">
-                  {filteredSamples.filter(s => s.overallStatus === 'SampleReceived').length}
-                </p>
+          <button onClick={() => setQuickFilter(quickFilter === 'ready-lab' ? 'all' : 'ready-lab')}>
+            <Card className={`bg-gradient-to-br from-green-50 to-green-100 border-2 cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1 ${
+              quickFilter === 'ready-lab' ? 'border-green-500 ring-2 ring-green-300' : 'border-green-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-700 font-medium">Ready for Lab</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {samples.filter(s => s.overallStatus === 'SampleReceived').length}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">Click to filter</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-600 opacity-50" />
               </div>
-              <CheckCircle className="w-8 h-8 text-green-600 opacity-50" />
-            </div>
-          </Card>
+            </Card>
+          </button>
         </div>
 
         {/* Samples List */}
