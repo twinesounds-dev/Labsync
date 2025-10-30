@@ -36,14 +36,18 @@ export default function LabRequestsPage() {
 
     const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
       const requestsData = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          requestDate: doc.data().requestDate?.toDate() || new Date(),
-          sampleReceivedDate: doc.data().sampleReceivedDate?.toDate(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        }))
+        .map((doc) => {
+          const data = doc.data() || {};
+          return {
+            id: doc.id,
+            ...data,
+            requestDate: data.requestDate?.toDate?.() || new Date(),
+            sampleReceivedDate: data.sampleReceivedDate?.toDate?.(),
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+            updatedAt: data.updatedAt?.toDate?.() || new Date(),
+            tests: Array.isArray(data.tests) ? data.tests : [],
+          };
+        })
         .filter((req) => req.sampleReceivedDate) as TestRequest[];
 
       setTestRequests(requestsData);

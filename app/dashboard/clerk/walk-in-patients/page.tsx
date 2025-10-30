@@ -47,7 +47,8 @@ export default function WalkInPatientsPage() {
       const patientsData: Patient[] = [];
       
       for (const doc of snapshot.docs) {
-        const patient = { id: doc.id, ...doc.data() } as Patient;
+        const data = doc.data() || {};
+        const patient = { id: doc.id, ...data } as Patient;
         
         // Check if patient already has a test request
         const requests = await firestoreService.getAll<TestRequest>(COLLECTIONS.TEST_REQUESTS);

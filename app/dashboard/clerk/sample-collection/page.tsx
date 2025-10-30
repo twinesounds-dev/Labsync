@@ -74,7 +74,8 @@ export default function SampleCollectionPage() {
       const samplesData: PendingSample[] = [];
 
       for (const doc of snapshot.docs) {
-        const requestData = { id: doc.id, ...doc.data() } as PendingSample;
+        const data = doc.data() || {};
+        const requestData = { id: doc.id, ...data } as PendingSample;
 
         // Filter: Only include if sample not yet received
         if (requestData.sampleReceivedDate) {
@@ -96,7 +97,7 @@ export default function SampleCollectionPage() {
 
         // Load test details
         const originalTests = (requestData as unknown as TestRequest).tests;
-        if (originalTests) {
+        if (Array.isArray(originalTests)) {
           const testDetails = [];
           for (const testItem of originalTests) {
             try {

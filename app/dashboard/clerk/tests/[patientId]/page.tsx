@@ -70,12 +70,15 @@ export default function TestSelectionPage() {
     );
 
     const unsubscribe = onSnapshot(testsQuery, (snapshot) => {
-      const testsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as Test[];
+      const testsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        };
+      }) as Test[];
 
       setTests(testsData);
     });

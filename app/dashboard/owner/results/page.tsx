@@ -37,11 +37,14 @@ export default function OwnerResultsPage() {
     );
 
     const unsubscribeResults = onSnapshot(resultsQuery, async (snapshot) => {
-      const resultsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        datePerformed: doc.data().datePerformed?.toDate() || new Date(),
-      })) as TestResult[];
+      const resultsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          datePerformed: data.datePerformed?.toDate?.() || new Date(),
+        };
+      }) as TestResult[];
 
       setResults(resultsData);
 

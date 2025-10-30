@@ -33,12 +33,16 @@ export default function LabResultsPage() {
     );
 
     const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
-      const requestsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        requestDate: doc.data().requestDate?.toDate() || new Date(),
-        sampleReceivedDate: doc.data().sampleReceivedDate?.toDate() || null,
-      })) as TestRequest[];
+      const requestsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          requestDate: data.requestDate?.toDate?.() || new Date(),
+          sampleReceivedDate: data.sampleReceivedDate?.toDate?.() || null,
+          tests: Array.isArray(data.tests) ? data.tests : [],
+        } as TestRequest;
+      });
 
       setRequests(requestsData);
       setLoading(false);

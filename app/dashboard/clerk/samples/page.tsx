@@ -70,7 +70,8 @@ function SampleTrackingContent() {
       const samplesData: SampleWithDetails[] = [];
 
       for (const doc of snapshot.docs) {
-        const requestData = { id: doc.id, ...doc.data() } as SampleWithDetails;
+        const data = doc.data() || {};
+        const requestData = { id: doc.id, ...data } as SampleWithDetails;
 
         // Load patient data
         if (requestData.patientId) {
@@ -87,7 +88,7 @@ function SampleTrackingContent() {
 
         // Load test details
         const originalTests = (requestData as unknown as TestRequest).tests;
-        if (originalTests) {
+        if (Array.isArray(originalTests)) {
           const testDetails = [];
           for (const testItem of originalTests) {
             try {

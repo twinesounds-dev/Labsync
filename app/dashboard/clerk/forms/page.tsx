@@ -34,14 +34,17 @@ export default function RequestFormsPage() {
     );
 
     const unsubscribe = onSnapshot(patientsQuery, (snapshot) => {
-      const patientsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        registrationDate: doc.data().registrationDate?.toDate() || new Date(),
-        dateOfBirth: doc.data().dateOfBirth?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as Patient[];
+      const patientsData = snapshot.docs.map((doc) => {
+        const data = doc.data() || {};
+        return {
+          id: doc.id,
+          ...data,
+          registrationDate: data.registrationDate?.toDate?.() || new Date(),
+          dateOfBirth: data.dateOfBirth?.toDate?.() || new Date(),
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        };
+      }) as Patient[];
 
       setPatients(patientsData);
       setLoading(false);

@@ -34,20 +34,21 @@ export default function PendingResultsPage() {
 
     const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
       const allRequests = snapshot.docs.map((doc) => {
-        const data = doc.data();
+        const data = doc.data() || {};
         return {
           id: doc.id,
           ...data,
-          requestDate: data.requestDate?.toDate() || new Date(),
-          sampleReceivedDate: data.sampleReceivedDate?.toDate(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
+          requestDate: data.requestDate?.toDate?.() || new Date(),
+          sampleReceivedDate: data.sampleReceivedDate?.toDate?.(),
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+          tests: Array.isArray(data.tests) ? data.tests : [],
         } as TestRequest;
       });
 
       const requestsData = allRequests.filter((req) => {
         if (!req.sampleReceivedDate) return false;
-        if (!Array.isArray(req.tests)) return false;
+        if (!Array.isArray(req.tests) || req.tests.length === 0) return false;
         return req.tests.some((t) => t.status === 'Pending' || t.status === 'InProgress');
       });
 

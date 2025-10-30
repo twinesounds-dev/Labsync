@@ -60,14 +60,15 @@ export default function ReadyReportsPage() {
       const reportsData: ReportWithDetails[] = [];
 
       for (const doc of snapshot.docs) {
+        const data = doc.data() || {};
         const reportData = {
           id: doc.id,
-          ...doc.data(),
-          datePerformed: doc.data().datePerformed?.toDate() || new Date(),
-          dateSubmitted: doc.data().dateSubmitted?.toDate() || new Date(),
-          dateApproved: doc.data().dateApproved?.toDate() || new Date(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          ...data,
+          datePerformed: data.datePerformed?.toDate?.() || new Date(),
+          dateSubmitted: data.dateSubmitted?.toDate?.() || new Date(),
+          dateApproved: data.dateApproved?.toDate?.() || new Date(),
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
         } as ReportWithDetails;
 
         // Load patient data
