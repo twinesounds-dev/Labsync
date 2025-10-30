@@ -45,8 +45,8 @@ export default function LabTechDashboard() {
         const data = doc.data();
 
         // Count tests that have been paid for and sample received
-        if (data.sampleReceivedDate) {
-          data.tests?.forEach((test: { status: string }) => {
+        if (data.sampleReceivedDate && Array.isArray(data.tests)) {
+          data.tests.forEach((test: { status: string }) => {
             if (test.status === 'Pending' || test.status === 'InProgress') {
               pendingTests++;
             }

@@ -229,7 +229,7 @@ export default function OwnerDashboard() {
               </div>
             </button>
 
-            {facilities.map((facility) => (
+            {Array.isArray(facilities) && facilities.map((facility) => (
               <button
                 key={facility.id}
                 onClick={() => setSelectedFacilityId(facility.id)}
@@ -370,7 +370,7 @@ export default function OwnerDashboard() {
             {selectedFacilityId === 'all' && (
               <Card title="Facility Performance Comparison" className="mt-6">
                 <div className="space-y-4">
-                  {facilities.map((facility) => (
+                  {Array.isArray(facilities) && facilities.map((facility) => (
                     <div
                       key={facility.id}
                       className="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors cursor-pointer"

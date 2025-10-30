@@ -155,23 +155,27 @@ export default function LabRequestsPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="space-y-1">
-                          {request.tests.map((test, idx) => (
-                            <div
-                              key={idx}
-                              className="text-sm text-gray-700 flex items-center gap-2"
-                            >
-                              <span
-                                className={`w-2 h-2 rounded-full ${
-                                  test.status === 'Completed'
-                                    ? 'bg-green-500'
-                                    : test.status === 'InProgress'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-gray-300'
-                                }`}
-                              />
-                              {test.test?.name || test.testId}
-                            </div>
-                          ))}
+                          {Array.isArray(request.tests) && request.tests.length > 0 ? (
+                            request.tests.map((test, idx) => (
+                              <div
+                                key={idx}
+                                className="text-sm text-gray-700 flex items-center gap-2"
+                              >
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    test.status === 'Completed'
+                                      ? 'bg-green-500'
+                                      : test.status === 'InProgress'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-300'
+                                  }`}
+                                />
+                                {test.test?.name || test.testId}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500">No tests</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600 max-w-xs">

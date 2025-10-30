@@ -45,12 +45,11 @@ export default function PendingResultsPage() {
         } as TestRequest;
       });
 
-      const requestsData = allRequests.filter(
-        (req) =>
-          req.sampleReceivedDate &&
-          req.tests &&
-          req.tests.some((t) => t.status === 'Pending' || t.status === 'InProgress')
-      );
+      const requestsData = allRequests.filter((req) => {
+        if (!req.sampleReceivedDate) return false;
+        if (!Array.isArray(req.tests)) return false;
+        return req.tests.some((t) => t.status === 'Pending' || t.status === 'InProgress');
+      });
 
       setTestRequests(requestsData);
       setLoading(false);
@@ -133,9 +132,11 @@ export default function PendingResultsPage() {
                 </thead>
                 <tbody>
                   {filteredRequests.map((request) => {
-                    const pendingTests = request.tests.filter(
-                      (t) => t.status === 'Pending' || t.status === 'InProgress'
-                    );
+                    const pendingTests = Array.isArray(request.tests)
+                      ? request.tests.filter(
+                          (t) => t.status === 'Pending' || t.status === 'InProgress'
+                        )
+                      : [];
                     return (
                       <tr
                         key={request.id}
