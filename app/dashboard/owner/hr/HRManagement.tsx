@@ -171,7 +171,10 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
     if (date instanceof Date) {
       return date.toLocaleDateString();
     }
-    return new Date(date).toLocaleDateString();
+    if (typeof date === 'string' || typeof date === 'number') {
+      return new Date(date).toLocaleDateString();
+    }
+    return new Date().toLocaleDateString();
   };
 
   const formatTime = (date: Timestamp | Date | string | unknown) => {
@@ -181,14 +184,37 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
     if (date instanceof Date) {
       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
-    return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (typeof date === 'string' || typeof date === 'number') {
+      return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+    return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const calculateHours = (checkIn: Timestamp | Date | string | unknown, checkOut: Timestamp | Date | string | unknown) => {
     if (!checkIn || !checkOut) return 0;
     
-    const start = checkIn instanceof Timestamp ? checkIn.toDate() : new Date(checkIn);
-    const end = checkOut instanceof Timestamp ? checkOut.toDate() : new Date(checkOut);
+    let start: Date;
+    let end: Date;
+    
+    if (checkIn instanceof Timestamp) {
+      start = checkIn.toDate();
+    } else if (checkIn instanceof Date) {
+      start = checkIn;
+    } else if (typeof checkIn === 'string' || typeof checkIn === 'number') {
+      start = new Date(checkIn);
+    } else {
+      return 0;
+    }
+    
+    if (checkOut instanceof Timestamp) {
+      end = checkOut.toDate();
+    } else if (checkOut instanceof Date) {
+      end = checkOut;
+    } else if (typeof checkOut === 'string' || typeof checkOut === 'number') {
+      end = new Date(checkOut);
+    } else {
+      return 0;
+    }
     
     return ((end.getTime() - start.getTime()) / (1000 * 60 * 60)).toFixed(1);
   };

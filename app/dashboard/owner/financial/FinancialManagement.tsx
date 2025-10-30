@@ -199,7 +199,10 @@ export default function FinancialManagement({ facilityId }: FinancialManagementP
     if (date instanceof Date) {
       return date.toLocaleDateString();
     }
-    return new Date(date).toLocaleDateString();
+    if (typeof date === 'string' || typeof date === 'number') {
+      return new Date(date).toLocaleDateString();
+    }
+    return new Date().toLocaleDateString();
   };
 
   return (
