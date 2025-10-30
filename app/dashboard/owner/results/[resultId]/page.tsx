@@ -51,7 +51,7 @@ export default function OwnerResultDetailPage() {
           
           // Generate clinical interpretation if patient data is available
           if (requestData?.patient && resultData.test) {
-            const interpretation = generateClinicalInterpretation(resultData as TestResult, requestData.patient);
+            const interpretation = generateClinicalInterpretation(resultData as TestResult);
             setAutoInterpretation(interpretation.autoInterpretation);
             setRecommendations(interpretation.recommendations);
           }

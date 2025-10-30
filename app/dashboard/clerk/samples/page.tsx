@@ -263,7 +263,10 @@ function SampleTrackingContent() {
               options={[
                 { value: 'all', label: 'All Status' },
                 { value: 'Pending', label: 'Pending Payment' },
-                { value: 'SampleReceived', label: 'Sample Received' },
+                { value: 'AwaitingPayment', label: 'Awaiting Payment' },
+                { value: 'ReadyForCollection', label: 'Ready for Collection' },
+                { value: 'SampleCollected', label: 'Sample Collected' },
+                { value: 'InLab', label: 'In Lab' },
                 { value: 'InProgress', label: 'In Progress' },
                 { value: 'Completed', label: 'Completed' },
                 { value: 'Approved', label: 'Approved' },
@@ -338,7 +341,7 @@ function SampleTrackingContent() {
               <div>
                 <p className="text-sm text-green-700 font-medium">Ready for Lab</p>
                 <p className="text-2xl font-bold text-green-900">
-                  {filteredSamples.filter(s => s.overallStatus === 'SampleReceived').length}
+                  {filteredSamples.filter(s => s.overallStatus === 'SampleCollected' || s.overallStatus === 'InLab').length}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-600 opacity-50" />

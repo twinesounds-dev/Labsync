@@ -571,8 +571,7 @@ export function flagResultValue(
  * Generate clinical interpretation for a test result
  */
 export function generateClinicalInterpretation(
-  testResult: TestResult,
-  _: Patient
+  testResult: TestResult
 ): {
   autoInterpretation: string;
   abnormalFindings: string[];
