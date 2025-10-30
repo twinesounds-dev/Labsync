@@ -56,8 +56,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ],
     clerk: [
       { name: 'Dashboard', href: '/dashboard/clerk', icon: Home },
-      { name: 'Sample Reception', href: '/dashboard/clerk/samples', icon: TestTube },
-      { name: 'Test Selection', href: '/dashboard/clerk/tests', icon: ClipboardList },
+      { name: 'Walk-in Patients', href: '/dashboard/clerk/walk-in-patients', icon: Users },
+      { name: 'Sample Collection', href: '/dashboard/clerk/sample-collection', icon: TestTube },
+      { name: 'Sample Tracking', href: '/dashboard/clerk/samples', icon: ClipboardList },
       { name: 'Request Forms', href: '/dashboard/clerk/forms', icon: FileText },
     ],
     lab_tech: [

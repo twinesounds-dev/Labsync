@@ -19,7 +19,7 @@ import {
   Eye
 } from 'lucide-react';
 import Link from 'next/link';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface SampleCollectionData {
@@ -63,12 +63,11 @@ export default function SampleCollectionPage() {
     }
 
     // Subscribe to test requests that are paid but samples not yet collected
+    // Simplified query to avoid composite index requirement
     const requestsQuery = query(
       collection(db, COLLECTIONS.TEST_REQUESTS),
       where('facilityId', '==', userProfile.facilityId),
-      where('paymentStatus', '==', 'Paid'),
-      where('overallStatus', '==', 'Pending'),
-      orderBy('requestDate', 'asc')
+      where('paymentStatus', '==', 'Paid')
     );
 
     const unsubscribe = onSnapshot(requestsQuery, async (snapshot) => {
@@ -76,6 +75,11 @@ export default function SampleCollectionPage() {
 
       for (const doc of snapshot.docs) {
         const requestData = { id: doc.id, ...doc.data() } as PendingSample;
+
+        // Filter: Only include if sample not yet received
+        if (requestData.sampleReceivedDate) {
+          continue; // Skip already collected samples
+        }
 
         // Load patient data
         if (requestData.patientId) {
@@ -112,6 +116,13 @@ export default function SampleCollectionPage() {
 
         samplesData.push(requestData);
       }
+
+      // Sort by request date in memory (oldest first)
+      samplesData.sort((a, b) => {
+        const dateA = a.requestDate instanceof Date ? a.requestDate.getTime() : new Date(a.requestDate).getTime();
+        const dateB = b.requestDate instanceof Date ? b.requestDate.getTime() : new Date(b.requestDate).getTime();
+        return dateA - dateB;
+      });
 
       setPendingSamples(samplesData);
       setLoading(false);

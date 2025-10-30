@@ -6,10 +6,9 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import { TestTube, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import Link from 'next/link';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { firestoreService, COLLECTIONS } from '@/lib/firestore';
-import { TestRequest } from '@/types';
+import { COLLECTIONS } from '@/lib/firestore';
 
 export default function ClerkDashboard() {
   const { userProfile } = useAuth();
@@ -30,9 +29,8 @@ export default function ClerkDashboard() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayTimestamp = Timestamp.fromDate(today);
 
-    // Subscribe to test requests
+    // Subscribe to test requests - simplified query
     const requestsQuery = query(
       collection(db, COLLECTIONS.TEST_REQUESTS),
       where('facilityId', '==', userProfile.facilityId)
@@ -52,8 +50,11 @@ export default function ClerkDashboard() {
         }
 
         // Samples processed today
-        if (data.sampleReceivedDate && data.sampleReceivedDate >= todayTimestamp) {
-          samplesProcessedToday++;
+        if (data.sampleReceivedDate) {
+          const receivedDate = data.sampleReceivedDate?.toDate ? data.sampleReceivedDate.toDate() : new Date(data.sampleReceivedDate);
+          if (receivedDate >= today) {
+            samplesProcessedToday++;
+          }
         }
 
         // Tests pending (payment confirmed but samples not yet received)
@@ -72,7 +73,7 @@ export default function ClerkDashboard() {
       setLoading(false);
     });
 
-    // Subscribe to walk-in patients waiting for lab request
+    // Subscribe to walk-in patients waiting for lab request - simplified
     const patientsQuery = query(
       collection(db, COLLECTIONS.PATIENTS),
       where('facilityId', '==', userProfile.facilityId),
@@ -80,20 +81,8 @@ export default function ClerkDashboard() {
     );
 
     const unsubscribePatients = onSnapshot(patientsQuery, async (snapshot) => {
-      // Check which patients don't have a test request yet
-      let walkInWaiting = 0;
-      
-      for (const patientDoc of snapshot.docs) {
-        const patientId = patientDoc.id;
-        
-        const requestSnapshot = await firestoreService.getAll<TestRequest>(COLLECTIONS.TEST_REQUESTS);
-        const hasRequest = requestSnapshot.some((req) => req.patientId === patientId);
-        
-        if (!hasRequest) {
-          walkInWaiting++;
-        }
-      }
-      
+      // Count walk-in patients - simplified approach
+      const walkInWaiting = snapshot.size;
       setStats((prev) => ({ ...prev, walkInPatientsWaiting: walkInWaiting }));
     });
 
