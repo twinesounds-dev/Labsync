@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import { Users, Receipt, TestTube, DollarSign, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRealtimeStats } from '@/lib/hooks/useRealtimeStats';
@@ -74,43 +75,48 @@ export default function ReceptionDashboard() {
           </Card>
         </div>
 
-        {/* Patient Registration Pathways */}
+        {/* Patient Registration */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Patient Registration</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Link href="/dashboard/reception/patients/new?type=referral">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-primary text-white">
-                <div className="text-center py-6">
-                  <FileText className="w-12 h-12 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold">Referral Patient</h3>
-                  <p className="text-sm opacity-90 mt-1">Has lab request form & clinical notes from doctor</p>
-                  <p className="text-xs opacity-75 mt-2">Reception → Test Selection → Payment → Clerk Sample Collection</p>
-                </div>
-              </Card>
-            </Link>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Patient Registration</h2>
+                <p className="text-gray-600 text-sm mt-1">Register new patients for lab testing</p>
+              </div>
+              <Link href="/dashboard/reception/patients/new">
+                <Button size="lg" className="flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Add New Patient
+                </Button>
+              </Link>
+            </div>
             
-            <Link href="/dashboard/reception/patients/new?type=walk-in">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-green-600 text-white">
-                <div className="text-center py-6">
-                  <Users className="w-12 h-12 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold">Walk-in Patient</h3>
-                  <p className="text-sm opacity-90 mt-1">Needs clinical assessment & lab request</p>
-                  <p className="text-xs opacity-75 mt-2">Reception → Clerk Lab Request → Payment → Sample Collection</p>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <Users className="w-5 h-5 text-green-600 mr-2" />
+                  <h3 className="font-semibold text-green-900">Walk-in</h3>
                 </div>
-              </Card>
-            </Link>
-
-            <Link href="/dashboard/reception/patients/new?type=inpatient">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-secondary text-white">
-                <div className="text-center py-6">
-                  <Users className="w-12 h-12 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold">Inpatient / Facility Transfer</h3>
-                  <p className="text-sm opacity-90 mt-1">From our facility or inter-facility referral</p>
-                  <p className="text-xs opacity-75 mt-2">Can be referred between facilities if tests unavailable</p>
+                <p className="text-sm text-green-800">Register → Clerk Consultation → Payment → Sample Collection → Lab</p>
+              </div>
+              
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                  <h3 className="font-semibold text-blue-900">Referral</h3>
                 </div>
-              </Card>
-            </Link>
-          </div>
+                <p className="text-sm text-blue-800">Register with Form → Select Tests → Payment → Sample Collection → Lab</p>
+              </div>
+              
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <FileText className="w-5 h-5 text-purple-600 mr-2" />
+                  <h3 className="font-semibold text-purple-900">Inpatient</h3>
+                </div>
+                <p className="text-sm text-purple-800">Verify Transfer → Payment → Sample Collection → Lab</p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Quick Actions */}

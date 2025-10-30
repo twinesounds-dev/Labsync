@@ -148,7 +148,7 @@ export default function SampleTracker({
             : 'Awaiting laboratory processing',
           status: testRequest.overallStatus === 'Completed' ? 'completed' :
                  testRequest.overallStatus === 'InProgress' ? 'current' :
-                 testRequest.overallStatus === 'SampleReceived' ? 'current' : 'pending',
+                 testRequest.overallStatus === 'SampleCollected' || testRequest.overallStatus === 'InLab' ? 'current' : 'pending',
           icon: <AlertTriangle className="w-5 h-5" />,
         },
         {
@@ -352,7 +352,7 @@ export default function SampleTracker({
                 testRequest.overallStatus === 'Approved' ? 'text-green-600' :
                 testRequest.overallStatus === 'Completed' ? 'text-blue-600' :
                 testRequest.overallStatus === 'InProgress' ? 'text-purple-600' :
-                testRequest.overallStatus === 'SampleReceived' ? 'text-orange-600' :
+                testRequest.overallStatus === 'SampleCollected' || testRequest.overallStatus === 'InLab' ? 'text-orange-600' :
                 'text-gray-600'
               }`}>
                 {testRequest.overallStatus}

@@ -90,7 +90,8 @@ export default function SelectTestsPage() {
           price: st.price,
         })),
         paymentStatus: 'Pending' as const,
-        overallStatus: 'Pending' as const,
+        sampleCollectionStatus: 'PENDING' as const,
+        overallStatus: 'AwaitingPayment' as const,
       };
 
       const requestId = await firestoreService.create<TestRequest>(

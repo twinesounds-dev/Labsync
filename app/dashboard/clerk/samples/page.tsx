@@ -132,7 +132,8 @@ function SampleTrackingContent() {
       if (statusFilter === 'rejected') {
         // Filter for rejected samples (sample quality rejected)
         filtered = filtered.filter(sample => 
-          sample.sampleCollectionData?.sampleQuality === 'Rejected'
+          sample.sampleCollectionData?.overallQualityStatus === 'FAILED' ||
+          sample.sampleCollectionStatus === 'REJECTED'
         );
       } else {
         filtered = filtered.filter(sample => sample.overallStatus === statusFilter);
@@ -175,8 +176,12 @@ function SampleTrackingContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending':
+      case 'AwaitingPayment':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'SampleReceived':
+      case 'ReadyForCollection':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'SampleCollected':
+      case 'InLab':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'InProgress':
         return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -192,8 +197,11 @@ function SampleTrackingContent() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Pending':
+      case 'AwaitingPayment':
         return <Clock className="w-4 h-4" />;
-      case 'SampleReceived':
+      case 'ReadyForCollection':
+      case 'SampleCollected':
+      case 'InLab':
         return <TestTube className="w-4 h-4" />;
       case 'InProgress':
         return <AlertTriangle className="w-4 h-4" />;
@@ -262,7 +270,10 @@ function SampleTrackingContent() {
               options={[
                 { value: 'all', label: 'All Status' },
                 { value: 'Pending', label: 'Pending Payment' },
-                { value: 'SampleReceived', label: 'Sample Received' },
+                { value: 'AwaitingPayment', label: 'Awaiting Payment' },
+                { value: 'ReadyForCollection', label: 'Ready for Collection' },
+                { value: 'SampleCollected', label: 'Sample Collected' },
+                { value: 'InLab', label: 'In Lab' },
                 { value: 'InProgress', label: 'In Progress' },
                 { value: 'Completed', label: 'Completed' },
                 { value: 'Approved', label: 'Approved' },
@@ -337,7 +348,7 @@ function SampleTrackingContent() {
               <div>
                 <p className="text-sm text-green-700 font-medium">Ready for Lab</p>
                 <p className="text-2xl font-bold text-green-900">
-                  {filteredSamples.filter(s => s.overallStatus === 'SampleReceived').length}
+                  {filteredSamples.filter(s => s.overallStatus === 'SampleCollected' || s.overallStatus === 'InLab').length}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-600 opacity-50" />

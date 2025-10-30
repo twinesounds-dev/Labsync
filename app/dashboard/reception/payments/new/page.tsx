@@ -134,18 +134,35 @@ function NewPaymentContent() {
 
       await firestoreService.create<Payment>(COLLECTIONS.PAYMENTS, paymentData);
 
-      // Update test request payment status
+      // Update test request payment status and enable sample collection
+      const paymentStatus = balance === 0 ? 'Paid' : balance < total ? 'Partial' : 'Pending';
+      const updateData: Partial<TestRequest> = {
+        paymentStatus: paymentStatus,
+      };
+
+      // PAYMENT GATE: If fully paid, make ready for sample collection
+      if (balance === 0) {
+        updateData.sampleCollectionStatus = 'READY_FOR_COLLECTION';
+        updateData.paymentCompletedAt = new Date();
+        updateData.overallStatus = 'ReadyForCollection';
+      }
+
       await firestoreService.update<TestRequest>(
         COLLECTIONS.TEST_REQUESTS,
         requestId!,
-        {
-          paymentStatus:
-            balance === 0 ? 'Paid' : balance < total ? 'Partial' : 'Pending',
-        } as Partial<TestRequest>
+        updateData as Partial<TestRequest>
       );
 
       // Print receipt and redirect
-      alert(`Payment recorded successfully!\nInvoice: ${invoiceNumber}`);
+      if (balance === 0) {
+        alert(
+          `Payment recorded successfully!\nInvoice: ${invoiceNumber}\n\n✅ Patient is now ready for sample collection.\nPlease direct patient to the Clerk for sample collection.`
+        );
+      } else {
+        alert(
+          `Payment recorded successfully!\nInvoice: ${invoiceNumber}\n\n⚠️ Balance remaining: UGX ${balance.toLocaleString()}\nComplete payment before sample collection.`
+        );
+      }
       router.push('/dashboard/reception');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
