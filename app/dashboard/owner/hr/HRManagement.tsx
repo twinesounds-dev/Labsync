@@ -215,7 +215,7 @@ export default function HRManagement({ facilityId }: HRManagementProps) {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
               activeTab === tab.id
                 ? 'border-primary text-primary'

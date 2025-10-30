@@ -193,7 +193,7 @@ export default function CheckInOut() {
           <div className="bg-blue-50 rounded-lg p-4 text-center">
             <Clock className="w-12 h-12 mx-auto mb-2 text-blue-600" />
             <p className="text-sm text-gray-700 mb-4">
-              You haven't checked in today. Please check in to start your shift.
+              You haven&apos;t checked in today. Please check in to start your shift.
             </p>
             <button
               onClick={handleCheckIn}

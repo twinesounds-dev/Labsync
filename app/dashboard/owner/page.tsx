@@ -263,7 +263,7 @@ export default function OwnerDashboard() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-primary text-white'
@@ -296,7 +296,7 @@ export default function OwnerDashboard() {
               <Card className="bg-gradient-to-br from-green-50 to-green-100 border-none">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-600 font-medium">Today's Income</p>
+                    <p className="text-sm text-green-600 font-medium">Today&apos;s Income</p>
                     <p className="text-2xl font-bold text-green-900 mt-1">
                       {formatCurrency(stats.todayRevenue)}
                     </p>
