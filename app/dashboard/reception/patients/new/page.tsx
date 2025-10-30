@@ -21,7 +21,7 @@ function NewPatientPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // Step 1: Select Type, Step 2: Registration Form
-  const [patientType, setPatientType] = useState<'walk-in' | 'referral' | 'inpatient' | ''>('');
+  const [patientType, setPatientType] = useState<'walk-in' | 'referral' | 'inpatient' | undefined>(undefined);
   
   const [formData, setFormData] = useState({
     surname: '',
@@ -86,6 +86,10 @@ function NewPatientPageContent() {
     setLoading(true);
 
     try {
+      if (!patientType) {
+        throw new Error('Please select a patient type');
+      }
+
       if (!userProfile?.facilityId) {
         throw new Error('No facility associated with user');
       }
