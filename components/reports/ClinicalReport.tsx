@@ -268,11 +268,11 @@ export default function ClinicalReport({
         </div>
       </div>
 
-      {/* Clinical Comments */}
+      {/* Lab Technician Comments */}
       {testResult.remarks && (
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
-            CLINICAL COMMENTS
+            LABORATORY COMMENTS
           </h3>
           <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
             <p className="text-sm text-gray-800 font-medium">{testResult.remarks}</p>
@@ -280,8 +280,69 @@ export default function ClinicalReport({
         </div>
       )}
 
-      {/* Clinical Significance */}
-      {hasAbnormalValues && (
+      {/* Clinical Interpretation */}
+      {(testResult.finalInterpretation || testResult.autoInterpretation) && (
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+            CLINICAL INTERPRETATION
+          </h3>
+          <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
+            <div className="text-sm text-gray-800 whitespace-pre-line">
+              {testResult.finalInterpretation || testResult.autoInterpretation}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clinical Recommendations */}
+      {testResult.recommendations && testResult.recommendations.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+            CLINICAL RECOMMENDATIONS
+          </h3>
+          <div className="bg-green-50 border border-green-300 rounded-lg p-4">
+            <ul className="list-disc list-inside space-y-2 text-sm text-gray-800">
+              {testResult.recommendations.map((rec, index) => (
+                <li key={index}>{rec}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Additional Clinical Notes */}
+      {testResult.clinicalNotes && (
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+            ADDITIONAL CLINICAL NOTES
+          </h3>
+          <div className="bg-purple-50 border border-purple-300 rounded-lg p-4">
+            <p className="text-sm text-gray-800">{testResult.clinicalNotes}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Critical Values Alert */}
+      {hasCriticalValues && (
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
+            ⚠️ CRITICAL VALUES ALERT
+          </h3>
+          <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4">
+            <p className="text-sm text-red-900 font-semibold">
+              CRITICAL ALERT: This report contains critical values that require IMMEDIATE 
+              clinical attention. The requesting physician has been notified as per laboratory protocol.
+            </p>
+            <p className="text-sm text-red-800 mt-2">
+              Critical values detected may indicate life-threatening conditions. Urgent medical 
+              evaluation and intervention are required. Do not delay treatment.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Clinical Significance (Only if no interpretation provided) */}
+      {hasAbnormalValues && !testResult.finalInterpretation && !testResult.autoInterpretation && (
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
             CLINICAL SIGNIFICANCE
@@ -292,12 +353,6 @@ export default function ClinicalReport({
               Clinical correlation is recommended. Please consult with the requesting physician 
               for proper interpretation and clinical management.
             </p>
-            {hasCriticalValues && (
-              <p className="text-sm text-red-800 font-semibold mt-2">
-                ⚠ CRITICAL VALUES: This report contains critical values that require immediate 
-                clinical attention. The requesting physician has been notified as per laboratory protocol.
-              </p>
-            )}
           </div>
         </div>
       )}

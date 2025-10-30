@@ -6,10 +6,11 @@ import { useAuth } from '@/lib/auth-context';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ArrowLeft, CheckCircle, XCircle, FileText, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, FileText, AlertTriangle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { COLLECTIONS, firestoreService } from '@/lib/firestore';
 import { TestResult, TestRequest } from '@/types';
+import { generateClinicalInterpretation } from '@/lib/clinical-interpretation';
 
 export default function OwnerResultDetailPage() {
   // const router = useRouter();
@@ -21,6 +22,14 @@ export default function OwnerResultDetailPage() {
   const [request, setRequest] = useState<TestRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  
+  // Clinical interpretation states
+  const [showInterpretation, setShowInterpretation] = useState(false);
+  const [autoInterpretation, setAutoInterpretation] = useState<string>('');
+  const [ownerInterpretation, setOwnerInterpretation] = useState<string>('');
+  const [clinicalNotes, setClinicalNotes] = useState<string>('');
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [newRecommendation, setNewRecommendation] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,6 +48,21 @@ export default function OwnerResultDetailPage() {
             resultData.testRequestId
           );
           setRequest(requestData);
+          
+          // Generate clinical interpretation if patient data is available
+          if (requestData?.patient && resultData.test) {
+            const interpretation = generateClinicalInterpretation(resultData as TestResult, requestData.patient);
+            setAutoInterpretation(interpretation.autoInterpretation);
+            setRecommendations(interpretation.recommendations);
+          }
+        }
+        
+        // Load existing interpretations if available
+        if (resultData?.ownerInterpretation) {
+          setOwnerInterpretation(resultData.ownerInterpretation);
+        }
+        if (resultData?.clinicalNotes) {
+          setClinicalNotes(resultData.clinicalNotes);
         }
       } catch (error) {
         console.error('Error fetching result:', error);
@@ -55,10 +79,21 @@ export default function OwnerResultDetailPage() {
 
     setUpdating(true);
     try {
+      // Combine auto-interpretation and owner interpretation
+      const finalInterpretation = ownerInterpretation.trim() 
+        ? `${autoInterpretation}\n\n---\n\n**ADDITIONAL CLINICAL NOTES:**\n\n${ownerInterpretation}`
+        : autoInterpretation;
+      
       await firestoreService.update(COLLECTIONS.TEST_RESULTS, result.id, {
         status: 'Approved',
         approvedBy: userProfile?.id,
         approvedDate: new Date(),
+        // Save clinical interpretations
+        autoInterpretation,
+        ownerInterpretation: ownerInterpretation.trim() || undefined,
+        finalInterpretation,
+        clinicalNotes: clinicalNotes.trim() || undefined,
+        recommendations: recommendations.length > 0 ? recommendations : undefined,
       });
 
       setResult({ ...result, status: 'Approved' });
@@ -116,8 +151,20 @@ export default function OwnerResultDetailPage() {
   };
 
   const hasAbnormalValues = result?.resultValues?.some(value => 
-    value.flag === 'High' || value.flag === 'Low' || value.flag === 'Critical'
+    value.flag === 'High' || value.flag === 'Low' || value.flag === 'Critical' || 
+    value.flag === 'Critical High' || value.flag === 'Critical Low'
   );
+  
+  const addRecommendation = () => {
+    if (newRecommendation.trim()) {
+      setRecommendations([...recommendations, newRecommendation.trim()]);
+      setNewRecommendation('');
+    }
+  };
+  
+  const removeRecommendation = (index: number) => {
+    setRecommendations(recommendations.filter((_, i) => i !== index));
+  };
 
   if (loading || !result) {
     return (
@@ -251,7 +298,8 @@ export default function OwnerResultDetailPage() {
               <div className="space-y-4">
                 {result.resultValues?.map((value, index) => (
                   <div key={index} className={`border-b border-gray-200 pb-4 last:border-b-0 ${
-                    value.flag === 'High' || value.flag === 'Critical' || value.flag === 'Low' 
+                    value.flag === 'High' || value.flag === 'Critical' || value.flag === 'Low' || 
+                    value.flag === 'Critical High' || value.flag === 'Critical Low'
                       ? 'bg-yellow-50 p-3 rounded-lg border border-yellow-200' 
                       : ''
                   }`}>
@@ -263,9 +311,9 @@ export default function OwnerResultDetailPage() {
                       <div>
                         <div className="text-sm text-gray-600">Value</div>
                         <div className={`font-medium ${
-                          value.flag === 'High' || value.flag === 'Critical' 
+                          value.flag === 'High' || value.flag === 'Critical' || value.flag === 'Critical High'
                             ? 'text-red-600' 
-                            : value.flag === 'Low' 
+                            : value.flag === 'Low' || value.flag === 'Critical Low'
                               ? 'text-orange-600'
                               : 'text-gray-900'
                         }`}>
@@ -280,9 +328,9 @@ export default function OwnerResultDetailPage() {
                         <div className="text-sm text-gray-600">Flag</div>
                         <div>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            value.flag === 'High' || value.flag === 'Critical' 
+                            value.flag === 'High' || value.flag === 'Critical' || value.flag === 'Critical High'
                               ? 'bg-red-100 text-red-800' 
-                              : value.flag === 'Low' 
+                              : value.flag === 'Low' || value.flag === 'Critical Low'
                                 ? 'bg-orange-100 text-orange-800'
                                 : 'bg-green-100 text-green-800'
                           }`}>
@@ -301,6 +349,113 @@ export default function OwnerResultDetailPage() {
                     Lab Technician Remarks:
                   </div>
                   <div className="text-sm text-gray-700">{result.remarks}</div>
+                </div>
+              )}
+            </Card>
+
+            {/* Clinical Interpretation Section */}
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h3 className="text-lg font-bold text-gray-900">Clinical Interpretation</h3>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowInterpretation(!showInterpretation)}
+                >
+                  {showInterpretation ? 'Hide' : 'Show'} Interpretation
+                </Button>
+              </div>
+
+              {showInterpretation && (
+                <div className="space-y-6">
+                  {/* Auto-Generated Interpretation */}
+                  {autoInterpretation && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        AI-Generated Clinical Interpretation
+                      </h4>
+                      <div className="text-sm text-blue-900 whitespace-pre-line">
+                        {autoInterpretation}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  {recommendations.length > 0 && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="text-sm font-semibold text-green-900 mb-3">
+                        Clinical Recommendations:
+                      </h4>
+                      <ul className="space-y-2">
+                        {recommendations.map((rec, index) => (
+                          <li key={index} className="flex items-start text-sm text-green-900">
+                            <span className="mr-2">•</span>
+                            <span className="flex-1">{rec}</span>
+                            <button
+                              onClick={() => removeRecommendation(index)}
+                              className="ml-2 text-red-600 hover:text-red-800"
+                            >
+                              ✕
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      
+                      {/* Add new recommendation */}
+                      <div className="mt-4 flex space-x-2">
+                        <input
+                          type="text"
+                          value={newRecommendation}
+                          onChange={(e) => setNewRecommendation(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addRecommendation()}
+                          placeholder="Add custom recommendation..."
+                          className="flex-1 px-3 py-2 border border-green-300 rounded-lg text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={addRecommendation}
+                          disabled={!newRecommendation.trim()}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Owner's Custom Interpretation */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Your Clinical Interpretation (Optional):
+                    </label>
+                    <textarea
+                      value={ownerInterpretation}
+                      onChange={(e) => setOwnerInterpretation(e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      placeholder="Add your professional interpretation, clinical correlation, or additional notes for this result. This will be included in the final report along with the AI-generated interpretation."
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      You can modify, expand, or add context to the AI-generated interpretation based on your clinical judgment and patient history.
+                    </p>
+                  </div>
+
+                  {/* Additional Clinical Notes */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Additional Clinical Notes (Optional):
+                    </label>
+                    <textarea
+                      value={clinicalNotes}
+                      onChange={(e) => setClinicalNotes(e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      placeholder="Enter any additional clinical notes, follow-up instructions, or specific guidance for the referring physician..."
+                    />
+                  </div>
                 </div>
               )}
             </Card>
