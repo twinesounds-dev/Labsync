@@ -111,7 +111,6 @@ export default function SampleCollectionPage() {
         // Load test details
         const originalTests = (requestData as unknown as TestRequest).tests;
         if (originalTests && Array.isArray(originalTests)) {
-          const testDetails = [];
           // Load tests in parallel
           const testPromises = originalTests.map(async (testItem) => {
             try {

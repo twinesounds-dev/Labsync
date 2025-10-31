@@ -73,7 +73,7 @@ export const firestoreService = {
     const docRef = doc(db, collectionName, id);
     
     // Convert Date objects to Firestore Timestamps recursively
-    const convertedData = this.convertDatesToTimestamps(data);
+    const convertedData = this.convertDatesToTimestamps(data) as Record<string, unknown>;
     
     await updateDoc(docRef, {
       ...convertedData,
@@ -82,7 +82,7 @@ export const firestoreService = {
   },
 
   // Helper to convert Date objects to Firestore Timestamps recursively
-  convertDatesToTimestamps(obj: any): any {
+  convertDatesToTimestamps(obj: unknown): unknown {
     if (obj === null || obj === undefined) {
       return obj;
     }
@@ -96,10 +96,10 @@ export const firestoreService = {
     }
     
     if (typeof obj === 'object') {
-      const converted: any = {};
+      const converted: Record<string, unknown> = {};
       for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
-          converted[key] = this.convertDatesToTimestamps(obj[key]);
+          converted[key] = this.convertDatesToTimestamps((obj as Record<string, unknown>)[key]);
         }
       }
       return converted;
