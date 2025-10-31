@@ -63,13 +63,35 @@ export default function SampleCollectionPage() {
     const unsubscribe = onSnapshot(requestsQuery, async (snapshot) => {
       const samplesData: PendingSample[] = [];
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Sample Collection] Total paid requests:', snapshot.size);
+      }
+
       for (const doc of snapshot.docs) {
         const requestData = { id: doc.id, ...doc.data() } as PendingSample;
 
         // Filter: Only include if sample collection not completed
-        if (requestData.sampleCollectionStatus === 'COLLECTED' || 
-            requestData.sampleCollectionStatus === 'SENT_TO_LAB') {
+        // Include: PENDING, READY_FOR_COLLECTION, COLLECTING, REJECTED, or null/undefined
+        // Exclude: COLLECTED, SENT_TO_LAB
+        const status = requestData.sampleCollectionStatus;
+        if (status === 'COLLECTED' || status === 'SENT_TO_LAB') {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Sample Collection] Skipping request', requestData.id, 'status:', status);
+          }
           continue;
+        }
+
+        // Ensure payment is fully paid (not partial) - redundant check since Firestore already filters, but kept for safety
+        // Note: Firestore query already filters for paymentStatus === 'Paid', but this ensures we don't include partial payments
+        if (requestData.paymentStatus !== 'Paid') {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Sample Collection] Skipping request', requestData.id, 'paymentStatus:', requestData.paymentStatus);
+          }
+          continue;
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Sample Collection] Including request', requestData.id, 'status:', status || 'null/undefined', 'paymentStatus:', requestData.paymentStatus);
         }
 
         // Load patient data
