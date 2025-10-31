@@ -87,7 +87,7 @@ export default function SampleCollectionPage() {
 
         // Load test details
         const originalTests = (requestData as unknown as TestRequest).tests;
-        if (originalTests) {
+        if (originalTests && Array.isArray(originalTests)) {
           const testDetails = [];
           for (const testItem of originalTests) {
             try {
@@ -136,8 +136,8 @@ export default function SampleCollectionPage() {
     setPatientConditionNotes('');
 
     // Generate required samples based on tests
-    if (sample.tests) {
-      const testCodes = sample.tests.map(t => t.code);
+    if (sample.tests && Array.isArray(sample.tests) && sample.tests.length > 0) {
+      const testCodes = sample.tests.map(t => t.code).filter(Boolean);
       const { sampleGroups } = getSampleRequirementsForTests(testCodes);
       
       const generatedSamples: Sample[] = [];
@@ -154,19 +154,28 @@ export default function SampleCollectionPage() {
           collectedBy: userProfile?.id || '',
           status: 'PENDING',
           qualityChecks: [],
-          relatedTestIds: group.tests,
-          notes: group.collectionInstructions.join('; '),
+          relatedTestIds: Array.isArray(group.tests) ? group.tests : [],
+          notes: Array.isArray(group.collectionInstructions) ? group.collectionInstructions.join('; ') : '',
         };
         generatedSamples.push(sample);
       });
 
       setSamples(generatedSamples);
+    } else {
+      setSamples([]);
     }
   };
 
   const handleQualityCheck = (checkType: 'volume' | 'container' | 'labeling' | 'integrity' | 'timing', passed: boolean, notes?: string) => {
     const updatedSamples = [...samples];
     const currentSample = updatedSamples[currentSampleIndex];
+    
+    if (!currentSample) return;
+    
+    // Ensure qualityChecks is an array
+    if (!Array.isArray(currentSample.qualityChecks)) {
+      currentSample.qualityChecks = [];
+    }
     
     // Remove existing check of this type
     currentSample.qualityChecks = currentSample.qualityChecks.filter(qc => qc.checkType !== checkType);
@@ -185,6 +194,8 @@ export default function SampleCollectionPage() {
   const handleSampleStatusUpdate = (status: SampleStatus, volumeCollected?: string, notes?: string) => {
     const updatedSamples = [...samples];
     const currentSample = updatedSamples[currentSampleIndex];
+    
+    if (!currentSample) return;
     
     currentSample.status = status;
     if (volumeCollected) currentSample.volumeCollected = volumeCollected;
@@ -205,9 +216,12 @@ export default function SampleCollectionPage() {
     if (currentSample.status === 'COLLECTED') {
       if (!currentSample.volumeCollected) return false;
       
+      // Ensure qualityChecks is an array
+      const qualityChecks = Array.isArray(currentSample.qualityChecks) ? currentSample.qualityChecks : [];
+      
       // Check if all quality checks passed
-      const allChecksPassed = currentSample.qualityChecks.length >= 3 && 
-        currentSample.qualityChecks.every(qc => qc.passed);
+      const allChecksPassed = qualityChecks.length >= 3 && 
+        qualityChecks.every(qc => qc.passed);
       
       return allChecksPassed;
     }
@@ -368,7 +382,7 @@ export default function SampleCollectionPage() {
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                       <div className="flex items-center">
                         <User className="w-4 h-4 mr-1" />
-                        <span>{sample.patient?.gender} • {sample.patient ? Math.floor((Date.now() - new Date(sample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</span>
+                        <span>{sample.patient?.gender} ? {sample.patient ? Math.floor((Date.now() - new Date(sample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</span>
                       </div>
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
@@ -411,7 +425,7 @@ export default function SampleCollectionPage() {
                     <p className="text-lg text-gray-700">{selectedSample.patient?.surname}, {selectedSample.patient?.givenName}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">{selectedSample.patient?.gender} • {selectedSample.patient ? Math.floor((Date.now() - new Date(selectedSample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</p>
+                    <p className="text-sm text-gray-600">{selectedSample.patient?.gender} ? {selectedSample.patient ? Math.floor((Date.now() - new Date(selectedSample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</p>
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                       selectedSample.patient?.urgency === 'STAT' ? 'bg-red-100 text-red-800' :
                       selectedSample.patient?.urgency === 'Urgent' ? 'bg-orange-100 text-orange-800' :
@@ -475,7 +489,7 @@ export default function SampleCollectionPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium">Tests Using This Sample:</span>
-                          <span>{currentSample.relatedTestIds.length}</span>
+                          <span>{currentSample.relatedTestIds?.length || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -495,7 +509,7 @@ export default function SampleCollectionPage() {
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Tests Requiring This Sample:</h4>
                       <div className="flex flex-wrap gap-2">
-                        {selectedSample.tests?.filter(t => currentSample.relatedTestIds.includes(t.code)).map((test, index) => (
+                        {selectedSample.tests?.filter(t => currentSample.relatedTestIds?.includes(t.code) || false).map((test, index) => (
                           <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
                             {test.name}
                           </span>
