@@ -67,7 +67,8 @@ export default function SampleCollectionPage() {
         console.log('[Sample Collection] Total paid requests:', snapshot.size);
       }
 
-      for (const doc of snapshot.docs) {
+      // Use Promise.all for parallel loading to speed up data fetching
+      const loadPromises = snapshot.docs.map(async (doc) => {
         const requestData = { id: doc.id, ...doc.data() } as PendingSample;
 
         // Filter: Only include if sample collection not completed
@@ -78,7 +79,7 @@ export default function SampleCollectionPage() {
           if (process.env.NODE_ENV === 'development') {
             console.log('[Sample Collection] Skipping request', requestData.id, 'status:', status);
           }
-          continue;
+          return null;
         }
 
         // Ensure payment is fully paid (not partial) - redundant check since Firestore already filters, but kept for safety
@@ -87,7 +88,7 @@ export default function SampleCollectionPage() {
           if (process.env.NODE_ENV === 'development') {
             console.log('[Sample Collection] Skipping request', requestData.id, 'paymentStatus:', requestData.paymentStatus);
           }
-          continue;
+          return null;
         }
 
         if (process.env.NODE_ENV === 'development') {
@@ -111,24 +112,36 @@ export default function SampleCollectionPage() {
         const originalTests = (requestData as unknown as TestRequest).tests;
         if (originalTests && Array.isArray(originalTests)) {
           const testDetails = [];
-          for (const testItem of originalTests) {
+          // Load tests in parallel
+          const testPromises = originalTests.map(async (testItem) => {
             try {
               const test = await firestoreService.getById<Test>(
                 COLLECTIONS.TESTS,
                 testItem.testId
               );
-              if (test) {
-                testDetails.push(test);
-              }
+              return test;
             } catch (error) {
               console.error('Error loading test:', error);
+              return null;
             }
-          }
-          requestData.tests = testDetails;
+          });
+          
+          const testResults = await Promise.all(testPromises);
+          requestData.tests = testResults.filter((test): test is Test => test !== null);
         }
 
-        samplesData.push(requestData);
-      }
+        return requestData;
+      });
+
+      // Wait for all promises to resolve
+      const results = await Promise.all(loadPromises);
+      
+      // Filter out null results
+      results.forEach(result => {
+        if (result) {
+          samplesData.push(result);
+        }
+      });
 
       // Sort by request date (oldest first)
       samplesData.sort((a, b) => {
@@ -139,6 +152,10 @@ export default function SampleCollectionPage() {
 
       setPendingSamples(samplesData);
       setLoading(false);
+    }, (error) => {
+      console.error('[Sample Collection] Error in snapshot listener:', error);
+      setLoading(false);
+      setPendingSamples([]);
     });
 
     return () => unsubscribe();
@@ -292,7 +309,7 @@ export default function SampleCollectionPage() {
         updatedAt: new Date(),
       });
 
-      // Reset form
+      // Reset form immediately after successful save
       setSelectedSample(null);
       setSamples([]);
       setCurrentSampleIndex(0);
@@ -302,7 +319,8 @@ export default function SampleCollectionPage() {
       alert(`Sample collection completed! Status: ${overallQualityStatus}`);
     } catch (error) {
       console.error('Error recording sample collection:', error);
-      alert('Failed to record sample collection');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to record sample collection: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
