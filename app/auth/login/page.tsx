@@ -78,8 +78,6 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Demo Credentials:</p>
           <div className="mt-2 space-y-1 text-xs">
-          </div>
-        </div>
       </div>
     </div>
   );
