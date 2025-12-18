@@ -23,7 +23,10 @@ export default function LoginPage() {
       await signIn(email, password);
       router.push('/');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to sign in. Please check your credentials.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -36,7 +39,9 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary mb-2">LabSync</h1>
           <p className="text-gray-600">Laboratory Management System</p>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-6">Sign In</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mt-6">
+            Sign In
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -66,13 +71,19 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
 
-          <Button
-            type="submit"
-            className="w-full"
-            isLoading={loading}
-          >
+          <Button type="submit" className="w-full" isLoading={loading}>
             Sign In
           </Button>
+        </form>
+
+        {/* ✅ FIXED SECTION */}
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>Demo Credentials:</p>
+          <div className="mt-2 space-y-1 text-xs">
+            <p>Email: admin@labsync.test</p>
+            <p>Password: password123</p>
+          </div>
+        </div>
       </div>
     </div>
   );
