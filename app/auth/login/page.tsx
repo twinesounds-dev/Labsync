@@ -1,4 +1,4 @@
-'use client';
+no'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -78,10 +78,6 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Demo Credentials:</p>
           <div className="mt-2 space-y-1 text-xs">
-            <p><strong>Owner:</strong> owner@labsync.ug / password123</p>
-            <p><strong>Receptionist:</strong> reception@labsync.ug / password123</p>
-            <p><strong>Clerk:</strong> clerk@labsync.ug / password123</p>
-            <p><strong>Lab Tech:</strong> labtech@labsync.ug / password123</p>
           </div>
         </div>
       </div>
