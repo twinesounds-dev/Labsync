@@ -73,15 +73,6 @@ export default function LoginPage() {
           >
             Sign In
           </Button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Demo Credentials:</p>
-          <div className="mt-2 space-y-1 text-xs">
-            <p><strong>Owner:</strong> owner@labsync.ug / password123</p>
-            <p><strong>Receptionist:</strong> reception@labsync.ug / password123</p>
-            <p><strong>Clerk:</strong> clerk@labsync.ug / password123</p>
-            <p><strong>Lab Tech:</strong> labtech@labsync.ug / password123</p>
           </div>
         </div>
       </div>
