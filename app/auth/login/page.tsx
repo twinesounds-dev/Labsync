@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input';
 export default function LoginPage() {
   const router = useRouter();
   const { signIn } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,7 +24,10 @@ export default function LoginPage() {
       await signIn(email, password);
       router.push('/');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to sign in. Please check your credentials.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -36,7 +40,9 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary mb-2">LabSync</h1>
           <p className="text-gray-600">Laboratory Management System</p>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-6">Sign In</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mt-6">
+            Sign In
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -52,7 +58,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="your.email@example.com"
+            placeholder="Email address"
             autoComplete="email"
           />
 
@@ -62,7 +68,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            placeholder="Enter your password"
+            placeholder="Password"
             autoComplete="current-password"
           />
 
@@ -74,10 +80,6 @@ export default function LoginPage() {
             Sign In
           </Button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Demo Credentials:</p>
-          <div className="mt-2 space-y-1 text-xs">
       </div>
     </div>
   );
