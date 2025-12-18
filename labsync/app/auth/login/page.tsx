@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input';
 export default function LoginPage() {
   const router = useRouter();
   const { signIn } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -57,7 +58,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="your.email@example.com"
+            placeholder="Email address"
             autoComplete="email"
           />
 
@@ -67,23 +68,18 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            placeholder="Enter your password"
+            placeholder="Password"
             autoComplete="current-password"
           />
 
-          <Button type="submit" className="w-full" isLoading={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            isLoading={loading}
+          >
             Sign In
           </Button>
         </form>
-
-        {/* ✅ FIXED SECTION */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Demo Credentials:</p>
-          <div className="mt-2 space-y-1 text-xs">
-            <p>Email: admin@labsync.test</p>
-            <p>Password: password123</p>
-          </div>
-        </div>
       </div>
     </div>
   );
