@@ -73,8 +73,6 @@ export default function LoginPage() {
           >
             Sign In
           </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
