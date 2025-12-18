@@ -63,13 +63,36 @@ export default function SampleCollectionPage() {
     const unsubscribe = onSnapshot(requestsQuery, async (snapshot) => {
       const samplesData: PendingSample[] = [];
 
-      for (const doc of snapshot.docs) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Sample Collection] Total paid requests:', snapshot.size);
+      }
+
+      // Use Promise.all for parallel loading to speed up data fetching
+      const loadPromises = snapshot.docs.map(async (doc) => {
         const requestData = { id: doc.id, ...doc.data() } as PendingSample;
 
         // Filter: Only include if sample collection not completed
-        if (requestData.sampleCollectionStatus === 'COLLECTED' || 
-            requestData.sampleCollectionStatus === 'SENT_TO_LAB') {
-          continue;
+        // Include: PENDING, READY_FOR_COLLECTION, COLLECTING, REJECTED, or null/undefined
+        // Exclude: COLLECTED, SENT_TO_LAB
+        const status = requestData.sampleCollectionStatus;
+        if (status === 'COLLECTED' || status === 'SENT_TO_LAB') {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Sample Collection] Skipping request', requestData.id, 'status:', status);
+          }
+          return null;
+        }
+
+        // Ensure payment is fully paid (not partial) - redundant check since Firestore already filters, but kept for safety
+        // Note: Firestore query already filters for paymentStatus === 'Paid', but this ensures we don't include partial payments
+        if (requestData.paymentStatus !== 'Paid') {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Sample Collection] Skipping request', requestData.id, 'paymentStatus:', requestData.paymentStatus);
+          }
+          return null;
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Sample Collection] Including request', requestData.id, 'status:', status || 'null/undefined', 'paymentStatus:', requestData.paymentStatus);
         }
 
         // Load patient data
@@ -87,26 +110,37 @@ export default function SampleCollectionPage() {
 
         // Load test details
         const originalTests = (requestData as unknown as TestRequest).tests;
-        if (originalTests) {
-          const testDetails = [];
-          for (const testItem of originalTests) {
+        if (originalTests && Array.isArray(originalTests)) {
+          // Load tests in parallel
+          const testPromises = originalTests.map(async (testItem) => {
             try {
               const test = await firestoreService.getById<Test>(
                 COLLECTIONS.TESTS,
                 testItem.testId
               );
-              if (test) {
-                testDetails.push(test);
-              }
+              return test;
             } catch (error) {
               console.error('Error loading test:', error);
+              return null;
             }
-          }
-          requestData.tests = testDetails;
+          });
+          
+          const testResults = await Promise.all(testPromises);
+          requestData.tests = testResults.filter((test): test is Test => test !== null);
         }
 
-        samplesData.push(requestData);
-      }
+        return requestData;
+      });
+
+      // Wait for all promises to resolve
+      const results = await Promise.all(loadPromises);
+      
+      // Filter out null results
+      results.forEach(result => {
+        if (result) {
+          samplesData.push(result);
+        }
+      });
 
       // Sort by request date (oldest first)
       samplesData.sort((a, b) => {
@@ -117,6 +151,10 @@ export default function SampleCollectionPage() {
 
       setPendingSamples(samplesData);
       setLoading(false);
+    }, (error) => {
+      console.error('[Sample Collection] Error in snapshot listener:', error);
+      setLoading(false);
+      setPendingSamples([]);
     });
 
     return () => unsubscribe();
@@ -136,8 +174,8 @@ export default function SampleCollectionPage() {
     setPatientConditionNotes('');
 
     // Generate required samples based on tests
-    if (sample.tests) {
-      const testCodes = sample.tests.map(t => t.code);
+    if (sample.tests && Array.isArray(sample.tests) && sample.tests.length > 0) {
+      const testCodes = sample.tests.map(t => t.code).filter(Boolean);
       const { sampleGroups } = getSampleRequirementsForTests(testCodes);
       
       const generatedSamples: Sample[] = [];
@@ -154,19 +192,28 @@ export default function SampleCollectionPage() {
           collectedBy: userProfile?.id || '',
           status: 'PENDING',
           qualityChecks: [],
-          relatedTestIds: group.tests,
-          notes: group.collectionInstructions.join('; '),
+          relatedTestIds: Array.isArray(group.tests) ? group.tests : [],
+          notes: Array.isArray(group.collectionInstructions) ? group.collectionInstructions.join('; ') : '',
         };
         generatedSamples.push(sample);
       });
 
       setSamples(generatedSamples);
+    } else {
+      setSamples([]);
     }
   };
 
   const handleQualityCheck = (checkType: 'volume' | 'container' | 'labeling' | 'integrity' | 'timing', passed: boolean, notes?: string) => {
     const updatedSamples = [...samples];
     const currentSample = updatedSamples[currentSampleIndex];
+    
+    if (!currentSample) return;
+    
+    // Ensure qualityChecks is an array
+    if (!Array.isArray(currentSample.qualityChecks)) {
+      currentSample.qualityChecks = [];
+    }
     
     // Remove existing check of this type
     currentSample.qualityChecks = currentSample.qualityChecks.filter(qc => qc.checkType !== checkType);
@@ -185,6 +232,8 @@ export default function SampleCollectionPage() {
   const handleSampleStatusUpdate = (status: SampleStatus, volumeCollected?: string, notes?: string) => {
     const updatedSamples = [...samples];
     const currentSample = updatedSamples[currentSampleIndex];
+    
+    if (!currentSample) return;
     
     currentSample.status = status;
     if (volumeCollected) currentSample.volumeCollected = volumeCollected;
@@ -205,9 +254,12 @@ export default function SampleCollectionPage() {
     if (currentSample.status === 'COLLECTED') {
       if (!currentSample.volumeCollected) return false;
       
+      // Ensure qualityChecks is an array
+      const qualityChecks = Array.isArray(currentSample.qualityChecks) ? currentSample.qualityChecks : [];
+      
       // Check if all quality checks passed
-      const allChecksPassed = currentSample.qualityChecks.length >= 3 && 
-        currentSample.qualityChecks.every(qc => qc.passed);
+      const allChecksPassed = qualityChecks.length >= 3 && 
+        qualityChecks.every(qc => qc.passed);
       
       return allChecksPassed;
     }
@@ -256,7 +308,7 @@ export default function SampleCollectionPage() {
         updatedAt: new Date(),
       });
 
-      // Reset form
+      // Reset form immediately after successful save
       setSelectedSample(null);
       setSamples([]);
       setCurrentSampleIndex(0);
@@ -266,7 +318,8 @@ export default function SampleCollectionPage() {
       alert(`Sample collection completed! Status: ${overallQualityStatus}`);
     } catch (error) {
       console.error('Error recording sample collection:', error);
-      alert('Failed to record sample collection');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to record sample collection: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -368,7 +421,7 @@ export default function SampleCollectionPage() {
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                       <div className="flex items-center">
                         <User className="w-4 h-4 mr-1" />
-                        <span>{sample.patient?.gender} • {sample.patient ? Math.floor((Date.now() - new Date(sample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</span>
+                        <span>{sample.patient?.gender} ? {sample.patient ? Math.floor((Date.now() - new Date(sample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</span>
                       </div>
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1" />
@@ -411,7 +464,7 @@ export default function SampleCollectionPage() {
                     <p className="text-lg text-gray-700">{selectedSample.patient?.surname}, {selectedSample.patient?.givenName}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">{selectedSample.patient?.gender} • {selectedSample.patient ? Math.floor((Date.now() - new Date(selectedSample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</p>
+                    <p className="text-sm text-gray-600">{selectedSample.patient?.gender} ? {selectedSample.patient ? Math.floor((Date.now() - new Date(selectedSample.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 'N/A'} years</p>
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                       selectedSample.patient?.urgency === 'STAT' ? 'bg-red-100 text-red-800' :
                       selectedSample.patient?.urgency === 'Urgent' ? 'bg-orange-100 text-orange-800' :
@@ -475,7 +528,7 @@ export default function SampleCollectionPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium">Tests Using This Sample:</span>
-                          <span>{currentSample.relatedTestIds.length}</span>
+                          <span>{currentSample.relatedTestIds?.length || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -495,7 +548,7 @@ export default function SampleCollectionPage() {
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Tests Requiring This Sample:</h4>
                       <div className="flex flex-wrap gap-2">
-                        {selectedSample.tests?.filter(t => currentSample.relatedTestIds.includes(t.code)).map((test, index) => (
+                        {selectedSample.tests?.filter(t => currentSample.relatedTestIds?.includes(t.code) || false).map((test, index) => (
                           <span key={index} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
                             {test.name}
                           </span>

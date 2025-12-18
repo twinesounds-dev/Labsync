@@ -87,7 +87,7 @@ function SampleTrackingContent() {
 
         // Load test details
         const originalTests = (requestData as unknown as TestRequest).tests;
-        if (originalTests) {
+        if (originalTests && Array.isArray(originalTests)) {
           const testDetails = [];
           for (const testItem of originalTests) {
             try {

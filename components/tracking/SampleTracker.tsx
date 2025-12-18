@@ -196,7 +196,7 @@ export default function SampleTracker({
       }
 
       // Load test details
-      if (request.tests) {
+      if (request.tests && Array.isArray(request.tests)) {
         const testDetails = [];
         for (const testItem of request.tests) {
           const test = await firestoreService.getById<Test>(

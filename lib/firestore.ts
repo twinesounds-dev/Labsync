@@ -71,10 +71,46 @@ export const firestoreService = {
     data: Partial<T>
   ): Promise<void> {
     const docRef = doc(db, collectionName, id);
+    
+    // Convert Date objects to Firestore Timestamps recursively
+    const convertedData = this.convertDatesToTimestamps(data) as Record<string, unknown>;
+    
     await updateDoc(docRef, {
-      ...data,
+      ...convertedData,
       updatedAt: Timestamp.now(),
     });
+  },
+
+  // Helper to convert Date objects to Firestore Timestamps recursively
+  // Also removes undefined values as Firestore doesn't support them
+  convertDatesToTimestamps(obj: unknown): unknown {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+    
+    if (obj instanceof Date) {
+      return Timestamp.fromDate(obj);
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.convertDatesToTimestamps(item));
+    }
+    
+    if (typeof obj === 'object') {
+      const converted: Record<string, unknown> = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = (obj as Record<string, unknown>)[key];
+          // Skip undefined values as Firestore doesn't support them
+          if (value !== undefined) {
+            converted[key] = this.convertDatesToTimestamps(value);
+          }
+        }
+      }
+      return converted;
+    }
+    
+    return obj;
   },
 
   // Delete

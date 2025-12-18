@@ -44,8 +44,13 @@ export default function ClerkDashboard() {
       snapshot.docs.forEach((doc) => {
         const data = doc.data();
 
-        // Samples awaiting reception (paid but not yet received)
-        if (data.paymentStatus === 'Paid' && !data.sampleReceivedDate) {
+        // Samples awaiting reception (paid but not yet collected)
+        // Check: payment is Paid AND sampleCollectionStatus is not COLLECTED/SENT_TO_LAB
+        const isPaid = data.paymentStatus === 'Paid';
+        const status = data.sampleCollectionStatus;
+        const isNotCollected = status !== 'COLLECTED' && status !== 'SENT_TO_LAB';
+        
+        if (isPaid && isNotCollected && !data.sampleReceivedDate) {
           samplesAwaiting++;
         }
 
@@ -58,7 +63,7 @@ export default function ClerkDashboard() {
         }
 
         // Tests pending (payment confirmed but samples not yet received)
-        if (data.paymentStatus === 'Paid' && !data.sampleReceivedDate) {
+        if (isPaid && isNotCollected && !data.sampleReceivedDate) {
           testsPending += data.tests?.length || 0;
         }
       });
